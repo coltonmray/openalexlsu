@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -51,9 +50,26 @@
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
         .grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 
-        .tabs { display: flex; border-bottom: 1px solid #ddd5ee; margin: 16px 0 0; }
-        .tab { padding: 10px 16px; cursor: pointer; color: #7a6d96; font-size: 13px; border-bottom: 3px solid transparent; }
-        .tab.active { color: #461D7C; font-weight: 700; border-bottom: 3px solid #461D7C; background: rgba(70,29,124,0.07); }
+        .tabs { 
+            display: flex; 
+            border-bottom: 1px solid #ddd5ee; 
+            margin: 16px 0 0; 
+        }
+        .tab { 
+            flex: 1;                    /* ← makes each tab equal width */
+            text-align: center;         /* ← centers the text */
+            padding: 14px 16px;         /* ← taller tabs */
+            cursor: pointer;
+            color: #7a6d96; 
+            font-size: 15px;            /* ← larger font */
+            border-bottom: 3px solid transparent;
+        }
+        .tab.active { 
+            color: #461D7C; 
+            font-weight: 700; 
+            border-bottom: 3px solid #461D7C; 
+            background: rgba(70,29,124,0.07); 
+        }
         .tab-content { display: none; padding-top: 22px; padding-bottom: 60px; }
         .tab-content.active { display: block; }
 
@@ -95,14 +111,14 @@
 <!-- Institution strip -->
 <div style="max-width:1240px; margin:0 auto; padding:16px 28px 0;">
     <div style="display:flex; gap:12px; align-items:center; background:white; border:1px solid #ddd5ee; border-radius:11px; padding:11px 16px;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/LSU_Athletics_logo.svg/200px-LSU_Athletics_logo.svg.png" style="height:38px; object-fit:contain;">
+        <img src="https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Louisiana%20State%20University%20%28logo%29.svg" style="height: 38px; object-fit: contain;">
         <div style="flex:1;">
             <span style="font-weight:700; font-size:14px; color:#461D7C;">Louisiana State University</span>
             <span style="color:#7a6d96; font-size:12px;"> · Baton Rouge, LA</span>
         </div>
         <div style="display:flex; gap:20px; font-size:12px;">
-            <span style="color:#7a6d96;">All-time works: <strong id="inst-works" style="color:#1a1030;">Loading...</strong></span>
-            <span style="color:#7a6d96;">All-time citations: <strong id="inst-cites" style="color:#1a1030;">Loading...</strong></span>
+            <span style="color:#7a6d96;">Works: <strong id="inst-works" style="color:#1a1030;">Loading...</strong></span>
+            <span style="color:#7a6d96;">Citations: <strong id="inst-cites" style="color:#1a1030;">Loading...</strong></span>
         </div>
     </div>
 </div>
@@ -163,8 +179,8 @@
             </div>
             <div class="card">
                 <div class="section-title">Publication Trends</div>
-                <div class="section-sub" id="trends-sub">OA breakdown & top 5 publishers · 2020–2026</div>
-                <div style="display:flex; border-bottom:1px solid #ddd5ee; margin-bottom:12px;">
+                <div class="section-sub" id="trends-sub" style="margin-bottom: 16px;">OA breakdown & top 5 publishers · 2020–2026</div>
+                <div style="display:flex; border-bottom:1px solid #ddd5ee; margin-bottom:20px;">
                     <div id="trends-tab-oa" onclick="showTrendsTab('oa')"
                          style="padding:8px 16px; cursor:pointer; font-size:13px; color:#461D7C; font-weight:700; border-bottom:3px solid #461D7C; background:rgba(70,29,124,0.07);">
                         OA Trends
@@ -510,7 +526,15 @@ function updateCharts(fdf) {
         options: {
             plugins: {
                 legend: { position: "bottom" },
-                datalabels: { display: false }
+                datalabels: {
+                    display: true,
+                    color: "white",
+                    font: { weight: "bold", size: 13 },
+                    formatter: (value, ctx) => {
+                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                        return Math.round(value / total * 100) + "%";
+                    }
+                }
             }
         }
     });
@@ -575,14 +599,26 @@ function updateCharts(fdf) {
         data: {
             labels: trendYears,
             datasets: [
-                { label: "Total",    data: trendYears.map(y => trendData[y].total),  borderColor: PURPLE,    fill: false, tension: 0.1 },
-                { label: "OA (All)", data: trendYears.map(y => trendData[y].oa),     borderColor: GREEN,     fill: false, tension: 0.1 },
-                { label: "Gold OA",  data: trendYears.map(y => trendData[y].gold),   borderColor: GOLD,      borderDash: [5,5], fill: false, tension: 0.1 },
-                { label: "Hybrid OA",data: trendYears.map(y => trendData[y].hybrid), borderColor: "#7c3aed", borderDash: [2,2], fill: false, tension: 0.1 },
+                { label: "Total",     data: trendYears.map(y => trendData[y].total),  borderColor: PURPLE,    borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
+                { label: "OA (All)",  data: trendYears.map(y => trendData[y].oa),     borderColor: GREEN,     borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
+                { label: "Gold OA",   data: trendYears.map(y => trendData[y].gold),   borderColor: GOLD,      borderWidth: 2.5, pointRadius: 0, borderDash: [5,5], fill: false, tension: 0.1 },
+                { label: "Hybrid OA", data: trendYears.map(y => trendData[y].hybrid), borderColor: "#7c3aed", borderWidth: 2.5, pointRadius: 0, borderDash: [2,2], fill: false, tension: 0.1 },
             ]
         },
         options: {
-            plugins: { legend: { position: "top" }, datalabels: { display: false } },
+            plugins: {
+                legend: {
+                    position: "top",
+                    labels: {
+                        usePointStyle: true,    // ← use line/point style instead of box
+                        pointStyle: "line",     // ← thin line in legend
+                        boxWidth: 30,           // ← wider line in legend
+                        font: { size: 12 },
+                        padding: 16,
+                    }
+                },
+                datalabels: { display: false }
+            },
             scales: { x: { grid: { display: false } } }
         }
     });
