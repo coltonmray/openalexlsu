@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LSU OpenAlex Research Dashboard</title>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Georgia, serif; background: #f8f6fb; color: #1a1030; }
+
+        /* Header */
+        .header {
+            background: #461D7C;
+            padding: 0 28px;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .header-logo {
+            width: 36px; height: 36px;
+            background: #FDD023;
+            border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 13px; color: #461D7C;
+        }
+        .header-title { color: white; font-weight: 700; font-size: 15px; }
+        .header-sub { color: rgba(255,255,255,0.62); font-size: 11px; }
+        .gold-bar { height: 4px; background: linear-gradient(90deg, #FDD023, #c9a800); }
+
+        /* Layout */
+        .container { max-width: 1240px; margin: 0 auto; padding: 0 28px; }
+        .card {
+            background: white;
+            border: 1px solid #ddd5ee;
+            border-radius: 12px;
+            padding: 18px 20px;
+            box-shadow: 0 1px 4px rgba(70,29,124,0.06);
+            margin-bottom: 16px;
+        }
+        .section-title {
+            color: #461D7C; font-size: 15px;
+            font-weight: 800; margin-bottom: 4px;
+        }
+        .section-sub { color: #7a6d96; font-size: 12px; margin-bottom: 12px; }
+
+        /* Stat cards */
+        .stat-grid { display: flex; gap: 14px; margin: 18px 0; }
+        .stat-card {
+            background: white; border: 1px solid #ddd5ee;
+            border-radius: 12px; padding: 16px 18px;
+            flex: 1; box-shadow: 0 1px 4px rgba(70,29,124,0.06);
+        }
+        .stat-label {
+            color: #7a6d96; font-size: 11px;
+            font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+        .stat-value { font-size: 28px; font-weight: 800; margin: 4px 0 2px; }
+        .stat-sub { color: #7a6d96; font-size: 12px; }
+
+        /* Grid layouts */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+        /* Tabs */
+        .tabs { display: flex; border-bottom: 1px solid #ddd5ee; margin: 16px 0 0; }
+        .tab {
+            padding: 10px 16px; cursor: pointer;
+            color: #7a6d96; font-size: 13px;
+            border-bottom: 3px solid transparent;
+        }
+        .tab.active {
+            color: #461D7C; font-weight: 700;
+            border-bottom: 3px solid #461D7C;
+            background: rgba(70,29,124,0.07);
+        }
+        .tab-content { display: none; padding-top: 22px; padding-bottom: 60px; }
+        .tab-content.active { display: block; }
+
+        /* Year slider */
+        .slider-container { padding: 14px 0 24px; }
+        .slider-label {
+            color: #7a6d96; font-size: 12px;
+            font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.07em; margin-bottom: 8px;
+        }
+        .year-inputs { display: flex; gap: 12px; align-items: center; }
+        .year-inputs select {
+            padding: 6px 12px; border: 1px solid #ddd5ee;
+            border-radius: 6px; font-family: Georgia, serif;
+            color: #1a1030; background: white;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center; color: #461D7C;
+            padding: 100px 0; font-size: 18px;
+        }
+
+        /* Footer */
+        .footer {
+            border-top: 3px solid #FDD023;
+            background: #461D7C; padding: 13px 28px;
+            display: flex; justify-content: space-between;
+            align-items: center;
+        }
+        .footer span { color: rgba(255,255,255,0.5); font-size: 12px; }
+        .footer a { color: #FDD023; }
+
+        canvas { max-height: 300px; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div class="header-logo">LSU</div>
+    <div>
+        <div class="header-title">Louisiana State University</div>
+        <div class="header-sub">OpenAlex Research Dashboard</div>
+    </div>
+</div>
+<div class="gold-bar"></div>
+
+<!-- Main content -->
+<div class="container">
+    <!-- Year filter -->
+    <div class="slider-container">
+        <div class="slider-label">Filter by Year:</div>
+        <div class="year-inputs">
+            <select id="year-min" onchange="filterData()"></select>
+            <span style="color:#7a6d96">to</span>
+            <select id="year-max" onchange="filterData()"></select>
+        </div>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stat-grid" id="stat-cards">
+        <div class="loading">Loading data from OpenAlex...</div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('overview')">Overview</div>
+        <div class="tab" onclick="showTab('publications')">Recent Publications</div>
+        <div class="tab" onclick="showTab('top-cited')">Top Cited</div>
+        <div class="tab" onclick="showTab('authors')">Authors & Topics</div>
+    </div>
+
+    <!-- Overview tab -->
+    <div id="tab-overview" class="tab-content active">
+        <div class="grid-3">
+            <div class="card">
+                <div class="section-title">Publications per Year</div>
+                <canvas id="chart-pubs-year"></canvas>
+            </div>
+            <div class="card">
+                <div class="section-title">Work Types</div>
+                <canvas id="chart-types"></canvas>
+            </div>
+            <div class="card">
+                <div class="section-title">OA Status</div>
+                <canvas id="chart-oa"></canvas>
+            </div>
+        </div>
+        <div class="grid-2">
+            <div class="card">
+                <div class="section-title">Estimated APCs by Year (USD)</div>
+                <canvas id="chart-apc"></canvas>
+            </div>
+            <div class="card">
+                <div class="section-title">Publication Trends</div>
+                <canvas id="chart-trends"></canvas>
+            </div>
+        </div>
+        <div class="grid-2">
+            <div class="card">
+                <div class="section-title">Top Publication Venues</div>
+                <canvas id="chart-journals"></canvas>
+            </div>
+            <div class="card">
+                <div class="section-title">Publications by Funding Agencies</div>
+                <canvas id="chart-funders"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Publications tab -->
+    <div id="tab-publications" class="tab-content">
+        <div class="card">
+            <div class="section-title">Recent Publications</div>
+            <table id="table-publications" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Year</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>APC</th>
+                    </tr>
+                </thead>
+                <tbody id="publications-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Top cited tab -->
+    <div id="tab-top-cited" class="tab-content">
+        <div class="card">
+            <div class="section-title">Top 25 Most Cited Works</div>
+            <table id="table-cited" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Year</th>
+                        <th>Citations</th>
+                        <th>Journal</th>
+                        <th>OA</th>
+                    </tr>
+                </thead>
+                <tbody id="cited-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Authors tab -->
+    <div id="tab-authors" class="tab-content">
+        <div class="grid-2">
+            <div class="card">
+                <div class="section-title">Top Research Topics</div>
+                <table id="table-topics" class="display" style="width:100%">
+                    <thead><tr><th>#</th><th>Topic</th><th>Works</th></tr></thead>
+                    <tbody id="topics-body"></tbody>
+                </table>
+            </div>
+            <div class="card">
+                <div class="section-title">Work Types Breakdown</div>
+                <table id="table-types" class="display" style="width:100%">
+                    <thead><tr><th>#</th><th>Type</th><th>Works</th></tr></thead>
+                    <tbody id="types-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+    <span>Louisiana State University · OpenAlex Research Dashboard</span>
+    <span>Data via <a href="https://openalex.org" target="_blank">OpenAlex</a> · CC0</span>
+</div>
+
+<script>
+// ── Constants ──
+const ROR_ID = "05ect4e57";
+const BASE_URL = "https://api.openalex.org";
+const PURPLE = "#461D7C";
+const GOLD = "#FDD023";
+const GREEN = "#16a34a";
+const CURRENT_YEAR = new Date().getFullYear();
+const START_YEAR = 2020;
+
+// ── State ──
+let allWorks = [];
+let charts = {};
+
+// ── Fetch all works from OpenAlex ──
+async function fetchWorks() {
+    let allResults = [];
+    let cursor = "*";
+    const fields = "id,title,publication_year,cited_by_count,primary_location,open_access,type,doi,apc_list,apc_paid,publication_date,primary_topic";
+    const filter = `institutions.ror:${ROR_ID},from_publication_date:${START_YEAR}-01-01`;
+
+    document.getElementById("stat-cards").innerHTML = '<div class="loading">Loading data from OpenAlex... this may take a minute</div>';
+
+    while (true) {
+        const params = new URLSearchParams({
+            filter: filter,
+            "per-page": 200,
+            cursor: cursor,
+            select: fields,
+            sort: "publication_year:desc"
+        });
+
+        const response = await fetch(`${BASE_URL}/works?${params}`);
+        const data = await response.json();
+        const results = data.results || [];
+        allResults = allResults.concat(results);
+
+        const total = data.meta?.count || 0;
+        document.getElementById("stat-cards").innerHTML = 
+            `<div class="loading">Loading... ${allResults.length}/${total} works</div>`;
+
+        cursor = data.meta?.next_cursor;
+        if (!results.length || !cursor) break;
+    }
+
+    return allResults;
+}
+
+// ── Process works into flat objects ──
+function processWorks(works) {
+    return works.map(w => {
+        const oa = w.open_access || {};
+        const source = w.primary_location?.source || {};
+        const apcList = w.apc_list || {};
+        const apcPaid = w.apc_paid || {};
+        return {
+            id:        w.id || "",
+            title:     w.title || "Untitled",
+            year:      w.publication_year,
+            citations: w.cited_by_count || 0,
+            journal:   source.display_name || "",
+            publisher: source.host_organization_name || "",
+            oa:        oa.is_oa ? "Yes" : "No",
+            oa_status: oa.oa_status || "unknown",
+            type:      w.type || "",
+            doi:       w.doi || "",
+            apc_list:  apcList.value_usd || null,
+            apc_paid:  apcPaid.value_usd || null,
+            pub_date:  w.publication_date || "",
+            topic:     w.primary_topic?.display_name || "",
+        };
+    });
+}
+
+// ── Filter by year ──
+function getFiltered() {
+    const minYear = parseInt(document.getElementById("year-min").value);
+    const maxYear = parseInt(document.getElementById("year-max").value);
+    return allWorks.filter(w => w.year >= minYear && w.year <= maxYear);
+}
+
+// ── Setup year dropdowns ──
+function setupYearSelectors() {
+    const minSel = document.getElementById("year-min");
+    const maxSel = document.getElementById("year-max");
+    for (let y = START_YEAR; y <= CURRENT_YEAR; y++) {
+        minSel.innerHTML += `<option value="${y}">${y}</option>`;
+        maxSel.innerHTML += `<option value="${y}" ${y === CURRENT_YEAR ? "selected" : ""}>${y}</option>`;
+    }
+}
+
+// ── Tab switching ──
+function showTab(name) {
+    document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.getElementById(`tab-${name}`).classList.add("active");
+    event.target.classList.add("active");
+}
+
+// ── Destroy and recreate chart ──
+function makeChart(id, config) {
+    if (charts[id]) charts[id].destroy();
+    const ctx = document.getElementById(id).getContext("2d");
+    charts[id] = new Chart(ctx, config);
+}
+
+// ── Update all charts and tables ──
+function filterData() {
+    const fdf = getFiltered();
+    updateStatCards(fdf);
+    updateCharts(fdf);
+    updateTables(fdf);
+}
+
+// ── Stat cards ──
+function updateStatCards(fdf) {
+    const total = fdf.length;
+    const totalCit = fdf.reduce((s, w) => s + w.citations, 0);
+    const avgCit = total ? (totalCit / total).toFixed(1) : 0;
+    const oaCount = fdf.filter(w => w.oa === "Yes").length;
+    const oaPct = total ? Math.round(oaCount / total * 100) : 0;
+    const apcSum = fdf.reduce((s, w) => s + (w.apc_list || 0), 0);
+
+    const minYear = document.getElementById("year-min").value;
+    const maxYear = document.getElementById("year-max").value;
+
+    document.getElementById("stat-cards").innerHTML = `
+        <div class="stat-card" style="border-left: 4px solid ${PURPLE}">
+            <div class="stat-label">Works</div>
+            <div class="stat-value">${total.toLocaleString()}</div>
+            <div class="stat-sub">${minYear}–${maxYear}</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid #c9a800">
+            <div class="stat-label">Total Citations</div>
+            <div class="stat-value">${totalCit.toLocaleString()}</div>
+            <div class="stat-sub">across filtered works</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid #7c3aed">
+            <div class="stat-label">Avg Citations</div>
+            <div class="stat-value">${avgCit}</div>
+            <div class="stat-sub">per work</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid ${GREEN}">
+            <div class="stat-label">Open Access</div>
+            <div class="stat-value">${oaPct}%</div>
+            <div class="stat-sub">${oaCount.toLocaleString()} OA works</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid #dc2626">
+            <div class="stat-label">Est. APC Spend</div>
+            <div class="stat-value">$${Math.round(apcSum).toLocaleString()}</div>
+            <div class="stat-sub">from available data</div>
+        </div>
+    `;
+}
+
+// ── Charts ──
+function updateCharts(fdf) {
+    // Publications per year
+    const yearCounts = {};
+    fdf.forEach(w => { if (w.year) yearCounts[w.year] = (yearCounts[w.year] || 0) + 1; });
+    const years = Object.keys(yearCounts).sort();
+    makeChart("chart-pubs-year", {
+        type: "bar",
+        data: {
+            labels: years,
+            datasets: [{ data: years.map(y => yearCounts[y]), backgroundColor: PURPLE, borderWidth: 0 }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } } } }
+    });
+
+    // OA Status pie
+    const oaCounts = { Yes: 0, No: 0 };
+    fdf.forEach(w => oaCounts[w.oa]++);
+    makeChart("chart-oa", {
+        type: "doughnut",
+        data: {
+            labels: ["Open Access", "Closed"],
+            datasets: [{ data: [oaCounts.Yes, oaCounts.No], backgroundColor: [GREEN, "#a6a6a6"], borderWidth: 0 }]
+        },
+        options: { plugins: { legend: { position: "bottom" } } }
+    });
+
+    // Work types pie
+    const typeCounts = {};
+    fdf.forEach(w => { if (w.type) typeCounts[w.type] = (typeCounts[w.type] || 0) + 1; });
+    const typeEntries = Object.entries(typeCounts).sort((a,b) => b[1]-a[1]).slice(0, 6);
+    makeChart("chart-types", {
+        type: "doughnut",
+        data: {
+            labels: typeEntries.map(e => e[0]),
+            datasets: [{ data: typeEntries.map(e => e[1]), backgroundColor: [PURPLE, GOLD, GREEN, "#7c3aed", "#f97316", "#a6a6a6"], borderWidth: 0 }]
+        },
+        options: { plugins: { legend: { position: "bottom" } } }
+    });
+
+    // APC by year
+    const apcByYear = {};
+    fdf.forEach(w => { if (w.apc_list && w.year) apcByYear[w.year] = (apcByYear[w.year] || 0) + w.apc_list; });
+    const apcYears = Object.keys(apcByYear).sort();
+    makeChart("chart-apc", {
+        type: "bar",
+        data: {
+            labels: apcYears,
+            datasets: [{
+                data: apcYears.map(y => apcByYear[y]),
+                backgroundColor: "#6aaa5e",
+                borderWidth: 0,
+                datalabels: { color: "white" }
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { ticks: { callback: v => "$" + (v >= 1000000 ? (v/1000000).toFixed(1)+"M" : (v/1000).toFixed(0)+"K") } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Publication trends
+    const trendData = {};
+    fdf.forEach(w => {
+        if (!w.year) return;
+        if (!trendData[w.year]) trendData[w.year] = { total: 0, oa: 0, gold: 0, hybrid: 0 };
+        trendData[w.year].total++;
+        if (w.oa === "Yes") trendData[w.year].oa++;
+        if (w.oa_status === "gold") trendData[w.year].gold++;
+        if (w.oa_status === "hybrid") trendData[w.year].hybrid++;
+    });
+    const trendYears = Object.keys(trendData).sort();
+    makeChart("chart-trends", {
+        type: "line",
+        data: {
+            labels: trendYears,
+            datasets: [
+                { label: "Total", data: trendYears.map(y => trendData[y].total), borderColor: PURPLE, fill: false, tension: 0.1 },
+                { label: "OA (All)", data: trendYears.map(y => trendData[y].oa), borderColor: GREEN, fill: false, tension: 0.1 },
+                { label: "Gold OA", data: trendYears.map(y => trendData[y].gold), borderColor: GOLD, borderDash: [5,5], fill: false, tension: 0.1 },
+                { label: "Hybrid OA", data: trendYears.map(y => trendData[y].hybrid), borderColor: "#7c3aed", borderDash: [2,2], fill: false, tension: 0.1 },
+            ]
+        },
+        options: { plugins: { legend: { position: "top" } }, scales: { x: { grid: { display: false } } } }
+    });
+
+    // Top journals
+    const journalCounts = {};
+    fdf.forEach(w => { if (w.journal) journalCounts[w.journal] = (journalCounts[w.journal] || 0) + 1; });
+    const topJournals = Object.entries(journalCounts).sort((a,b) => b[1]-a[1]).slice(0, 10);
+    makeChart("chart-journals", {
+        type: "bar",
+        data: {
+            labels: topJournals.map(e => e[0].length > 35 ? e[0].slice(0,35)+"..." : e[0]),
+            datasets: [{ data: topJournals.map(e => e[1]), backgroundColor: "#c9a800", borderWidth: 0 }]
+        },
+        options: {
+            indexAxis: "y",
+            plugins: { legend: { display: false } },
+            scales: { x: { grid: { display: true } }, y: { grid: { display: false } } }
+        }
+    });
+
+    // Top funders - fetch from OpenAlex group-by
+    fetch(`${BASE_URL}/works?filter=institutions.ror:${ROR_ID}&group-by=funders.id&per-page=10`)
+        .then(r => r.json())
+        .then(data => {
+            const funders = (data.group_by || []).map(g => ({ name: g.key_display_name || g.key, count: g.count }));
+            makeChart("chart-funders", {
+                type: "bar",
+                data: {
+                    labels: funders.map(f => f.name.length > 35 ? f.name.slice(0,35)+"..." : f.name),
+                    datasets: [{ data: funders.map(f => f.count), backgroundColor: PURPLE, borderWidth: 0 }]
+                },
+                options: {
+                    indexAxis: "y",
+                    plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: true } }, y: { grid: { display: false } } }
+                }
+            });
+        });
+}
+
+// ── Tables ──
+function updateTables(fdf) {
+    // Recent publications
+    const sorted = [...fdf].sort((a,b) => b.pub_date.localeCompare(a.pub_date)).slice(0, 100);
+    const pubBody = document.getElementById("publications-body");
+    pubBody.innerHTML = sorted.map(w => `
+        <tr>
+            <td><a href="${w.id}" target="_blank">${w.title}</a></td>
+            <td>${w.year || ""}</td>
+            <td>${w.type || ""}</td>
+            <td>${w.oa_status || ""}</td>
+            <td>${w.pub_date || ""}</td>
+            <td>${w.apc_list ? "$" + Math.round(w.apc_list).toLocaleString() : "—"}</td>
+        </tr>
+    `).join("");
+
+    if ($.fn.DataTable.isDataTable("#table-publications")) {
+        $("#table-publications").DataTable().destroy();
+    }
+    $("#table-publications").DataTable({ pageLength: 25, order: [[4, "desc"]] });
+
+    // Top cited
+    const topCited = [...fdf].sort((a,b) => b.citations - a.citations).slice(0, 25);
+    const citedBody = document.getElementById("cited-body");
+    citedBody.innerHTML = topCited.map(w => `
+        <tr>
+            <td><a href="${w.id}" target="_blank">${w.title}</a></td>
+            <td>${w.year || ""}</td>
+            <td>${w.citations.toLocaleString()}</td>
+            <td>${w.journal || ""}</td>
+            <td>${w.oa || ""}</td>
+        </tr>
+    `).join("");
+
+    if ($.fn.DataTable.isDataTable("#table-cited")) {
+        $("#table-cited").DataTable().destroy();
+    }
+    $("#table-cited").DataTable({ pageLength: 25, order: [[2, "desc"]] });
+
+    // Topics
+    const topicCounts = {};
+    fdf.forEach(w => { if (w.topic) topicCounts[w.topic] = (topicCounts[w.topic] || 0) + 1; });
+    const topTopics = Object.entries(topicCounts).sort((a,b) => b[1]-a[1]).slice(0, 10);
+    document.getElementById("topics-body").innerHTML = topTopics.map((e, i) => `
+        <tr><td>${i+1}</td><td>${e[0]}</td><td>${e[1].toLocaleString()}</td></tr>
+    `).join("");
+
+    if ($.fn.DataTable.isDataTable("#table-topics")) {
+        $("#table-topics").DataTable().destroy();
+    }
+    $("#table-topics").DataTable({ pageLength: 10, searching: false, paging: false });
+
+    // Types breakdown
+    const typeEntries = Object.entries(
+        fdf.reduce((acc, w) => { if (w.type) acc[w.type] = (acc[w.type]||0)+1; return acc; }, {})
+    ).sort((a,b) => b[1]-a[1]);
+    document.getElementById("types-body").innerHTML = typeEntries.map((e, i) => `
+        <tr><td>${i+1}</td><td>${e[0]}</td><td>${e[1].toLocaleString()}</td></tr>
+    `).join("");
+
+    if ($.fn.DataTable.isDataTable("#table-types")) {
+        $("#table-types").DataTable().destroy();
+    }
+    $("#table-types").DataTable({ pageLength: 10, searching: false, paging: false });
+}
+
+// ── Initialize ──
+async function init() {
+    setupYearSelectors();
+    const raw = await fetchWorks();
+    allWorks = processWorks(raw);
+    filterData();
+}
+
+init();
+</script>
+</body>
+</html>
