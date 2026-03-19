@@ -94,6 +94,34 @@
         .badge-bronze  { background: #ffedd5; color: #9a3412; }
         .badge-closed  { background: #f3f4f6; color: #374151; }
         .badge-unknown { background: #f3f4f6; color: #6b7280; }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #461D7C;
+            border: 2px solid white;
+           box-shadow: 0 1px 4px rgba(70,29,124,0.3);
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #461D7C;
+            border: 2px solid white;
+            box-shadow: 0 1px 4px rgba(70,29,124,0.3);
+            pointer-events: auto;
+           cursor: pointer;
+        }
+
+        #table-publications tbody tr { height: 60px; }
+        #table-publications tbody td { vertical-align: middle; }
+        #table-publications thead th { background: #f0ecf7; color: #461D7C; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+        
     </style>
 </head>
 <body>
@@ -127,27 +155,53 @@
 <div class="container">
     <!-- Year slider -->
     <div class="slider-container">
-        <div class="slider-label">Filter by Year:</div>
-        <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
-            <span id="year-min-label" style="color:#1a1030; font-weight:700; min-width:40px;">2020</span>
-            <div style="flex:1; position:relative; height:20px;">
-                <input type="range" id="year-min" min="2020" max="2026" value="2020"
-                       oninput="syncSliders()"
-                       style="position:absolute; width:100%; accent-color:#461D7C; pointer-events:auto;">
-                <input type="range" id="year-max" min="2020" max="2026" value="2026"
-                       oninput="syncSliders()"
-                       style="position:absolute; width:100%; accent-color:#461D7C; pointer-events:auto;">
+    <div class="slider-label">Filter by Year:</div>
+    <div style="padding: 8px 0 0;">
+        <div style="position:relative; height:40px; margin: 0 10px;">
+            <!-- Track -->
+            <div id="slider-track" style="position:absolute; top:18px; left:0; right:0; height:2px; background:#ddd5ee; border-radius:2px;"></div>
+            <!-- Selected range highlight -->
+            <div id="slider-range" style="position:absolute; top:18px; height:2px; background:#461D7C; border-radius:2px;"></div>
+            <!-- Min handle -->
+            <input type="range" id="year-min" min="2020" max="2026" value="2020" step="1"
+                   style="position:absolute; width:100%; height:2px; background:transparent; appearance:none; -webkit-appearance:none; pointer-events:none; top:18px;">
+            <!-- Max handle -->
+            <input type="range" id="year-max" min="2020" max="2026" value="2026" step="1"
+                   style="position:absolute; width:100%; height:2px; background:transparent; appearance:none; -webkit-appearance:none; pointer-events:none; top:18px;">
+        </div>
+        <!-- Tick marks and labels -->
+        <div style="display:flex; justify-content:space-between; margin: 4px 10px 0; position:relative;">
+            <div id="tick-2020" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2020,2020)">
+                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2020
             </div>
-            <span id="year-max-label" style="color:#1a1030; font-weight:700; min-width:40px;">2026</span>
+            <div id="tick-2021" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2021,2021)">
+                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2021
+            </div>
+            <div id="tick-2022" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2022,2022)">
+                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2022
+            </div>
+            <div id="tick-2023" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2023,2023)">
+                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2023
+            </div>
+            <div id="tick-2024" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2024,2024)">
+                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2024
+            </div>
+            <div id="tick-2025" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2025,2025)">
+                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2025
+            </div>
+            <div id="tick-2026" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2026,2026)">
+                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2026
+            </div>
         </div>
     </div>
+</div>
 
     <!-- Tabs -->
     <div class="tabs">
         <div class="tab active" onclick="showTab('overview')">Overview</div>
-        <div class="tab" onclick="showTab('publications')">Recent Publications</div>
-        <div class="tab" onclick="showTab('top-cited')">Top Cited</div>
-        <div class="tab" onclick="showTab('authors')">Authors & Topics</div>
+        <div class="tab" onclick="('publications')">Recent Publications</div>
+        <div class="tab" onclick="('top-cited')">Top Cited</div>
+        <div class="tab" onclick="('authors')">Authors & Topics</div>
     </div>
 
     <!-- Stat cards -->
@@ -381,6 +435,7 @@ function getFiltered() {
 }
 
 // ── Setup year sliders ──
+
 function setupYearSelectors() {
     document.getElementById("year-min").min = START_YEAR;
     document.getElementById("year-min").max = CURRENT_YEAR;
@@ -388,17 +443,57 @@ function setupYearSelectors() {
     document.getElementById("year-max").min = START_YEAR;
     document.getElementById("year-max").max = CURRENT_YEAR;
     document.getElementById("year-max").value = CURRENT_YEAR;
-    document.getElementById("year-min-label").textContent = START_YEAR;
-    document.getElementById("year-max-label").textContent = CURRENT_YEAR;
+
+    document.getElementById("year-min").addEventListener("input", syncSliders);
+    document.getElementById("year-max").addEventListener("input", syncSliders);
+
+    updateSliderUI();
+}
+
+function updateSliderUI() {
+    const minVal = parseInt(document.getElementById("year-min").value);
+    const maxVal = parseInt(document.getElementById("year-max").value);
+    const min = START_YEAR;
+    const max = CURRENT_YEAR;
+    const range = max - min;
+
+    const leftPct  = ((minVal - min) / range) * 100;
+    const rightPct = ((maxVal - min) / range) * 100;
+
+    document.getElementById("slider-range").style.left  = leftPct + "%";
+    document.getElementById("slider-range").style.width = (rightPct - leftPct) + "%";
+
+    // Highlight active tick labels
+    for (let y = min; y <= max; y++) {
+        const tick = document.getElementById(`tick-${y}`);
+        if (tick) {
+            tick.style.color = (y >= minVal && y <= maxVal) ? "#461D7C" : "#7a6d96";
+            tick.style.fontWeight = (y >= minVal && y <= maxVal) ? "700" : "400";
+        }
+    }
 }
 
 function syncSliders() {
     let minVal = parseInt(document.getElementById("year-min").value);
     let maxVal = parseInt(document.getElementById("year-max").value);
-    if (minVal > maxVal) { document.getElementById("year-min").value = maxVal; minVal = maxVal; }
-    if (maxVal < minVal) { document.getElementById("year-max").value = minVal; maxVal = minVal; }
-    document.getElementById("year-min-label").textContent = minVal;
-    document.getElementById("year-max-label").textContent = maxVal;
+
+    if (minVal > maxVal) {
+        // whichever handle moved, swap
+        if (this === document.getElementById("year-min")) {
+            document.getElementById("year-min").value = maxVal;
+        } else {
+            document.getElementById("year-max").value = minVal;
+        }
+    }
+
+    updateSliderUI();
+    filterData();
+}
+
+function setYearRange(min, max) {
+    document.getElementById("year-min").value = min;
+    document.getElementById("year-max").value = max;
+    updateSliderUI();
     filterData();
 }
 
@@ -408,8 +503,9 @@ function showTab(name) {
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     document.getElementById(`tab-${name}`).classList.add("active");
     event.target.classList.add("active");
+    // hide stat cards on non-overview tabs
+    document.getElementById("stat-cards").style.display = name === "overview" ? "flex" : "none";
 }
-
 // ── Trends tab switching ──
 function showTrendsTab(name) {
     const isOA = name === "oa";
@@ -704,21 +800,41 @@ function updateTables(fdf) {
     const topicsSub = document.getElementById("topics-sub");
     if (topicsSub) topicsSub.textContent = `Primary topics · ${minYear}–${maxYear}`;
 
-    // Recent publications
+        // Recent publications
     const sorted = [...fdf].sort((a,b) => b.pub_date.localeCompare(a.pub_date)).slice(0, 200);
-    document.getElementById("publications-body").innerHTML = sorted.map(w => `
+    document.getElementById("publications-body").innerHTML = sorted.map(w => {
+        const badgeStyles = {
+            gold:    "background:#fef9c3;",
+            green:   "background:#dcfce7;",
+            hybrid:  "background:#e0f2fe;",
+            bronze:  "background:#ffedd5;",
+            closed:  "background:#f3f4f6;",
+            unknown: "background:#f3f4f6;",
+        };
+        const cellStyle = badgeStyles[w.oa_status] || "background:#f3f4f6;";
+        return `
         <tr>
-            <td style="max-width:500px; white-space:normal; line-height:1.4;">
-                <a href="${w.id}" target="_blank" style="color:#461D7C;">${w.title}</a>
+            <td style="white-space:normal; line-height:1.5; padding:12px;">
+                <a href="${w.id}" target="_blank" style="color:#2563eb;">${w.title}</a>
             </td>
-            <td style="text-align:center; color:#7a6d96;">${w.type || ""}</td>
-            <td style="text-align:center;"><span class="badge badge-${w.oa_status || 'unknown'}">${w.oa_status || "unknown"}</span></td>
-            <td style="text-align:center; color:#7a6d96;">${w.pub_date || ""}</td>
-            <td style="text-align:right; font-weight:700;">${w.apc_list ? "$" + Math.round(w.apc_list).toLocaleString() : "—"}</td>
+            <td style="text-align:center; color:#7a6d96; font-size:12px; white-space:nowrap;">${w.type || ""}</td>
+            <td style="${cellStyle} text-align:center; font-size:12px; font-weight:600; white-space:nowrap;">${w.oa_status || ""}</td>
+            <td style="text-align:center; color:#7a6d96; font-size:12px; white-space:nowrap;">${w.pub_date || ""}</td>
+            <td style="text-align:right; font-weight:700; font-size:12px; white-space:nowrap;">
+                ${w.apc_list ? "$" + Math.round(w.apc_list).toLocaleString() : "—"}
+            </td>
         </tr>
-    `).join("");
+    `}).join("");
+
     if ($.fn.DataTable.isDataTable("#table-publications")) $("#table-publications").DataTable().destroy();
-    $("#table-publications").DataTable({ pageLength: 25, order: [[3, "desc"]], columnDefs: [{ targets: 0, width: "55%" }] });
+    $("#table-publications").DataTable({
+        pageLength: 25,
+        order: [[3, "desc"]],
+        columnDefs: [
+            { targets: 0, width: "60%" },
+            { targets: [1,2,3,4], width: "auto", className: "dt-center" }
+        ]
+    });
 
     // Top cited
     const topCited = [...fdf].sort((a,b) => b.citations - a.citations).slice(0, 25);
