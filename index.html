@@ -342,7 +342,6 @@
 <script>
 Chart.register(ChartDataLabels);
 
-// ── Constants ──
 const ROR_ID = "05ect4e57";
 const BASE_URL = "https://api.openalex.org";
 const PURPLE = "#461D7C";
@@ -350,40 +349,218 @@ const GOLD = "#FDD023";
 const GREEN = "#16a34a";
 const CURRENT_YEAR = new Date().getFullYear();
 const START_YEAR = 2020;
+const CACHE_KEY = "lsu_works_v2";
+const CACHE_TIME_KEY = "lsu_works_time_v2";
+const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
 
-// ── State ──
 let allWorks = [];
 let charts = {};
+let summaryData = {};
 
-// ── Fetch all works from OpenAlex ──
+// ── Fetch summary data (fast, group-by endpoints) ──
+async function fetchSummaryData() {
+    const filter = `institutions.ror:${ROR_ID},from_publication_date:${START_YEAR}-01-01`;
+    const [pubsByYear, byType, byOA, byJournal, byFunder, byTopic, byPublisher] = await Promise.all([
+        fetch(`${BASE_URL}/works?filter=${filter}&group-by=publication_year&per-page=20`).then(r=>r.json()),
+        fetch(`${BASE_URL}/works?filter=${filter}&group-by=type&per-page=10`).then(r=>r.json()),
+        fetch(`${BASE_URL}/works?filter=${filter}&group-by=open_access.oa_status&per-page=10`).then(r=>r.json()),
+        fetch(`${BASE_URL}/works?filter=${filter}&group-by=primary_location.source.id&per-page=12`).then(r=>r.json()),
+        fetch(`${BASE_URL}/works?filter=institutions.ror:${ROR_ID}&group-by=funders.id&per-page=10`).then(r=>r.json()),
+        fetch(`${BASE_URL}/works?filter=${filter}&group-by=primary_topic.id&per-page=10`).then(r=>r.json()),
+        fetch(`${BASE_URL}/works?filter=${filter}&group-by=primary_location.source.host_organization_lineage&per-page=10`).then(r=>r.json()),
+    ]);
+    return { pubsByYear, byType, byOA, byJournal, byFunder, byTopic, byPublisher };
+}
+
+// ── Render charts from summary data ──
+function renderChartsFromSummary(summary) {
+    const minYear = parseInt(document.getElementById("year-min").value);
+    const maxYear = parseInt(document.getElementById("year-max").value);
+
+    // Publications per year
+    const pubsData = (summary.pubsByYear.group_by || [])
+        .filter(g => parseInt(g.key) >= minYear && parseInt(g.key) <= maxYear)
+        .sort((a,b) => a.key - b.key);
+    makeChart("chart-pubs-year", {
+        type: "bar",
+        data: { labels: pubsData.map(g=>g.key), datasets: [{ data: pubsData.map(g=>g.count), backgroundColor: PURPLE, borderWidth: 0 }] },
+        options: {
+            plugins: {
+                legend: { display: false },
+                datalabels: { anchor: "end", align: "start", color: "white", font: { weight: "bold", size: 11 }, formatter: v => v.toLocaleString() }
+            },
+            scales: { x: { grid: { display: false } }, y: { grid: { display: true } } }
+        }
+    });
+
+    // OA Status
+    const oaData = summary.byOA.group_by || [];
+    const oaOpen = oaData.filter(g => g.key !== "closed" && g.key !== "unknown").reduce((s,g)=>s+g.count,0);
+    const oaClosed = oaData.filter(g => g.key === "closed").reduce((s,g)=>s+g.count,0);
+    makeChart("chart-oa", {
+        type: "doughnut",
+        data: { labels: ["Open Access", "Closed"], datasets: [{ data: [oaOpen, oaClosed], backgroundColor: [GREEN, "#a6a6a6"], borderWidth: 0 }] },
+        options: {
+            plugins: {
+                legend: { position: "bottom" },
+                datalabels: {
+                    display: true, color: "white", font: { weight: "bold", size: 13 },
+                    formatter: (value, ctx) => { const t = ctx.dataset.data.reduce((a,b)=>a+b,0); return Math.round(value/t*100)+"%"; }
+                }
+            }
+        }
+    });
+
+    // Work types
+    const typeData = (summary.byType.group_by || []).slice(0,6);
+    makeChart("chart-types", {
+        type: "doughnut",
+        data: { labels: typeData.map(g=>g.key_display_name||g.key), datasets: [{ data: typeData.map(g=>g.count), backgroundColor: [PURPLE,GOLD,GREEN,"#7c3aed","#f97316","#a6a6a6"], borderWidth: 0 }] },
+        options: { plugins: { legend: { position: "bottom" }, datalabels: { display: false } } }
+    });
+
+    // Top journals
+    const journalData = (summary.byJournal.group_by || []).slice(0,10);
+    makeChart("chart-journals", {
+        type: "bar",
+        data: {
+            labels: journalData.map(g => (g.key_display_name||g.key).length > 35 ? (g.key_display_name||g.key).slice(0,35)+"..." : (g.key_display_name||g.key)),
+            datasets: [{ data: journalData.map(g=>g.count), backgroundColor: "#c9a800", borderWidth: 0 }]
+        },
+        options: { indexAxis: "y", plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { grid: { display: true } }, y: { grid: { display: false } } } }
+    });
+
+    // Funders
+    const funderData = (summary.byFunder.group_by || []).slice(0,10);
+    makeChart("chart-funders", {
+        type: "bar",
+        data: {
+            labels: funderData.map(g => (g.key_display_name||g.key).length > 35 ? (g.key_display_name||g.key).slice(0,35)+"..." : (g.key_display_name||g.key)),
+            datasets: [{ data: funderData.map(g=>g.count), backgroundColor: PURPLE, borderWidth: 0 }]
+        },
+        options: { indexAxis: "y", plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { grid: { display: true } }, y: { grid: { display: false } } } }
+    });
+
+    // OA Trends
+    const trendYears = pubsData.map(g=>g.key);
+    const oaTrendFilter = `institutions.ror:${ROR_ID},from_publication_date:${START_YEAR}-01-01`;
+    Promise.all([
+        fetch(`${BASE_URL}/works?filter=${oaTrendFilter},open_access.oa_status:gold&group-by=publication_year&per-page=20`).then(r=>r.json()),
+        fetch(`${BASE_URL}/works?filter=${oaTrendFilter},open_access.is_oa:true&group-by=publication_year&per-page=20`).then(r=>r.json()),
+        fetch(`${BASE_URL}/works?filter=${oaTrendFilter},open_access.oa_status:hybrid&group-by=publication_year&per-page=20`).then(r=>r.json()),
+    ]).then(([gold, oa, hybrid]) => {
+        const toMap = (gb) => Object.fromEntries((gb.group_by||[]).map(g=>[g.key, g.count]));
+        const goldMap = toMap(gold), oaMap = toMap(oa), hybridMap = toMap(hybrid);
+        const totalMap = Object.fromEntries(pubsData.map(g=>[g.key, g.count]));
+        makeChart("chart-trends", {
+            type: "line",
+            data: {
+                labels: trendYears,
+                datasets: [
+                    { label: "Total",     data: trendYears.map(y=>totalMap[y]||0),  borderColor: PURPLE,    borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
+                    { label: "OA (All)",  data: trendYears.map(y=>oaMap[y]||0),     borderColor: GREEN,     borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
+                    { label: "Gold OA",   data: trendYears.map(y=>goldMap[y]||0),   borderColor: GOLD,      borderWidth: 2.5, pointRadius: 0, borderDash: [5,5], fill: false, tension: 0.1 },
+                    { label: "Hybrid OA", data: trendYears.map(y=>hybridMap[y]||0), borderColor: "#7c3aed", borderWidth: 2.5, pointRadius: 0, borderDash: [2,2], fill: false, tension: 0.1 },
+                ]
+            },
+            options: {
+                plugins: { legend: { position: "top", labels: { usePointStyle: true, pointStyle: "line", boxWidth: 30, font: { size: 12 }, padding: 16 } }, datalabels: { display: false } },
+                scales: { x: { grid: { display: false } } }
+            }
+        });
+    });
+
+    // Publisher trends
+    const pubFilter = `institutions.ror:${ROR_ID},from_publication_date:${START_YEAR}-01-01`;
+    const top5Publishers = (summary.byPublisher.group_by||[]).slice(0,5).map(g=>g.key_display_name||g.key);
+    Promise.all(
+        top5Publishers.map(pub =>
+            fetch(`${BASE_URL}/works?filter=${pubFilter},primary_location.source.host_organization_lineage:${encodeURIComponent(pub)}&group-by=publication_year&per-page=20`)
+            .then(r=>r.json())
+            .then(d => ({ pub, data: Object.fromEntries((d.group_by||[]).map(g=>[g.key,g.count])) }))
+        )
+    ).then(results => {
+        const pubColors = ["#4e79a7","#f28e2b","#e15759","#76b7b2","#59a14f"];
+        makeChart("chart-publisher-trends", {
+            type: "line",
+            data: {
+                labels: trendYears,
+                datasets: results.map((r,i) => ({
+                    label: r.pub,
+                    data: trendYears.map(y=>r.data[y]||0),
+                    borderColor: pubColors[i], backgroundColor: pubColors[i],
+                    fill: false, tension: 0.1, pointRadius: 4,
+                }))
+            },
+            options: { plugins: { legend: { position: "top", labels: { font: { size: 11 } } }, datalabels: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
+        });
+    });
+
+    // Update stat cards from summary
+    const totalWorks = pubsData.reduce((s,g)=>s+g.count,0);
+    document.getElementById("stat-cards").innerHTML = `
+        <div class="stat-card" style="border-left:4px solid ${PURPLE}">
+            <div class="stat-label">Works</div>
+            <div class="stat-value">${totalWorks.toLocaleString()}</div>
+            <div class="stat-sub">${minYear}–${maxYear}</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #c9a800">
+            <div class="stat-label">Total Citations</div>
+            <div class="stat-value">Loading...</div>
+            <div class="stat-sub">across filtered works</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #7c3aed">
+            <div class="stat-label">Avg Citations</div>
+            <div class="stat-value">Loading...</div>
+            <div class="stat-sub">per work</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid ${GREEN}">
+            <div class="stat-label">Open Access</div>
+            <div class="stat-value">${Math.round(oaOpen/(oaOpen+oaClosed)*100)}%</div>
+            <div class="stat-sub">${oaOpen.toLocaleString()} OA works</div>
+        </div>
+    `;
+}
+
+// ── Fetch full works (with localStorage cache) ──
 async function fetchWorks() {
+    // Check localStorage cache
+    try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        const timestamp = localStorage.getItem(CACHE_TIME_KEY);
+        if (cached && timestamp && Date.now() - parseInt(timestamp) < CACHE_MAX_AGE) {
+            console.log("Loading from localStorage cache...");
+            return JSON.parse(cached);
+        }
+    } catch(e) {
+        console.log("Cache read error:", e);
+    }
+
+    // Fetch fresh from OpenAlex
     let allResults = [];
     let cursor = "*";
     const fields = "id,title,publication_year,cited_by_count,primary_location,open_access,type,doi,apc_list,apc_paid,publication_date,primary_topic,authorships";
     const filter = `institutions.ror:${ROR_ID},from_publication_date:${START_YEAR}-01-01`;
 
-    document.getElementById("stat-cards").innerHTML = '<div class="loading">Loading data from OpenAlex... this may take a minute</div>';
-
     while (true) {
-        const params = new URLSearchParams({
-            filter: filter,
-            "per-page": 200,
-            cursor: cursor,
-            select: fields,
-            sort: "publication_year:desc"
-        });
-
+        const params = new URLSearchParams({ filter, "per-page": 200, cursor, select: fields, sort: "publication_year:desc" });
         const response = await fetch(`${BASE_URL}/works?${params}`);
         const data = await response.json();
         const results = data.results || [];
         allResults = allResults.concat(results);
-
         const total = data.meta?.count || 0;
-        document.getElementById("stat-cards").innerHTML =
-            `<div class="loading">Loading... ${allResults.length}/${total} works</div>`;
-
+        console.log(`Fetched ${allResults.length}/${total} works`);
         cursor = data.meta?.next_cursor;
         if (!results.length || !cursor) break;
+    }
+
+    // Save to localStorage
+    try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(allResults));
+        localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+        console.log("Saved to localStorage cache");
+    } catch(e) {
+        console.log("Cache too large for localStorage:", e);
     }
 
     return allResults;
@@ -395,76 +572,51 @@ function processWorks(works) {
         const oa = w.open_access || {};
         const source = w.primary_location?.source || {};
         const apcList = w.apc_list || {};
-        const apcPaid = w.apc_paid || {};
-
-        // Extract LSU authors
         const authorships = w.authorships || [];
         const authors = authorships
-            .filter(a => (a.institutions || []).some(inst =>
-                (inst.ror || "") === `https://ror.org/${ROR_ID}` ||
-                (inst.id || "").includes("I121820613")
+            .filter(a => (a.institutions||[]).some(inst =>
+                (inst.ror||"") === `https://ror.org/${ROR_ID}` || (inst.id||"").includes("I121820613")
             ))
-            .map(a => a.author?.display_name || "")
-            .filter(Boolean);
-
+            .map(a => a.author?.display_name||"").filter(Boolean);
         return {
-            id:        w.id || "",
-            title:     w.title || "Untitled",
-            year:      w.publication_year,
-            citations: w.cited_by_count || 0,
-            journal:   source.display_name || "",
-            publisher: source.host_organization_name || "",
-            oa:        oa.is_oa ? "Yes" : "No",
-            oa_status: oa.oa_status || "unknown",
-            type:      w.type || "",
-            doi:       w.doi || "",
-            apc_list:  apcList.value_usd || null,
-            apc_paid:  apcPaid.value_usd || null,
-            pub_date:  w.publication_date || "",
-            topic:     w.primary_topic?.display_name || "",
-            authors:   authors.join("|"),
+            id: w.id||"", title: w.title||"Untitled", year: w.publication_year,
+            citations: w.cited_by_count||0, journal: source.display_name||"",
+            publisher: source.host_organization_name||"",
+            oa: oa.is_oa?"Yes":"No", oa_status: oa.oa_status||"unknown",
+            type: w.type||"", doi: w.doi||"",
+            apc_list: apcList.value_usd||null, pub_date: w.publication_date||"",
+            topic: w.primary_topic?.display_name||"", authors: authors.join("|"),
         };
     });
 }
 
-// ── Filter by year ──
 function getFiltered() {
     const minYear = parseInt(document.getElementById("year-min").value);
     const maxYear = parseInt(document.getElementById("year-max").value);
     return allWorks.filter(w => w.year >= minYear && w.year <= maxYear);
 }
 
-// ── Setup year sliders ──
-
 function setupYearSelectors() {
-    document.getElementById("year-min").min = START_YEAR;
-    document.getElementById("year-min").max = CURRENT_YEAR;
+    ["year-min","year-max"].forEach(id => {
+        document.getElementById(id).min = START_YEAR;
+        document.getElementById(id).max = CURRENT_YEAR;
+    });
     document.getElementById("year-min").value = START_YEAR;
-    document.getElementById("year-max").min = START_YEAR;
-    document.getElementById("year-max").max = CURRENT_YEAR;
     document.getElementById("year-max").value = CURRENT_YEAR;
-
     document.getElementById("year-min").addEventListener("input", syncSliders);
     document.getElementById("year-max").addEventListener("input", syncSliders);
-
     updateSliderUI();
 }
 
 function updateSliderUI() {
     const minVal = parseInt(document.getElementById("year-min").value);
     const maxVal = parseInt(document.getElementById("year-max").value);
-    const min = START_YEAR;
-    const max = CURRENT_YEAR;
-    const range = max - min;
-
-    const leftPct  = ((minVal - min) / range) * 100;
-    const rightPct = ((maxVal - min) / range) * 100;
-
+    const range = CURRENT_YEAR - START_YEAR;
+    const leftPct  = ((minVal - START_YEAR) / range) * 100;
+    const rightPct = ((maxVal - START_YEAR) / range) * 100;
     document.getElementById("slider-range").style.left  = leftPct + "%";
     document.getElementById("slider-range").style.width = (rightPct - leftPct) + "%";
-
-    // Highlight active tick labels
-    for (let y = min; y <= max; y++) {
+    for (let y = START_YEAR; y <= CURRENT_YEAR; y++) {
         const tick = document.getElementById(`tick-${y}`);
         if (tick) {
             tick.style.color = (y >= minVal && y <= maxVal) ? "#461D7C" : "#7a6d96";
@@ -476,62 +628,48 @@ function updateSliderUI() {
 function syncSliders() {
     let minVal = parseInt(document.getElementById("year-min").value);
     let maxVal = parseInt(document.getElementById("year-max").value);
-
     if (minVal > maxVal) {
-        // whichever handle moved, swap
-        if (this === document.getElementById("year-min")) {
-            document.getElementById("year-min").value = maxVal;
-        } else {
-            document.getElementById("year-max").value = minVal;
-        }
+        if (this.id === "year-min") document.getElementById("year-min").value = maxVal;
+        else document.getElementById("year-max").value = minVal;
     }
-
     updateSliderUI();
-    filterData();
+    if (allWorks.length > 0) filterData();
+    else renderChartsFromSummary(summaryData);
 }
 
 function setYearRange(min, max) {
     document.getElementById("year-min").value = min;
     document.getElementById("year-max").value = max;
     updateSliderUI();
-    filterData();
+    if (allWorks.length > 0) filterData();
+    else renderChartsFromSummary(summaryData);
 }
 
-// ── Tab switching ──
 function showTab(name) {
     document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     document.getElementById(`tab-${name}`).classList.add("active");
     event.target.classList.add("active");
-    // hide stat cards on non-overview tabs
     document.getElementById("stat-cards").style.display = name === "overview" ? "flex" : "none";
 }
-// ── Trends tab switching ──
+
 function showTrendsTab(name) {
     const isOA = name === "oa";
     document.getElementById("trends-oa-panel").style.display = isOA ? "block" : "none";
     document.getElementById("trends-pub-panel").style.display = isOA ? "none" : "block";
     const oaTab = document.getElementById("trends-tab-oa");
     const pubTab = document.getElementById("trends-tab-pub");
-    if (isOA) {
-        oaTab.style.cssText = "padding:8px 16px; cursor:pointer; font-size:13px; color:#461D7C; font-weight:700; border-bottom:3px solid #461D7C; background:rgba(70,29,124,0.07);";
-        pubTab.style.cssText = "padding:8px 16px; cursor:pointer; font-size:13px; color:#7a6d96; border-bottom:3px solid transparent; background:transparent;";
-    } else {
-        pubTab.style.cssText = "padding:8px 16px; cursor:pointer; font-size:13px; color:#461D7C; font-weight:700; border-bottom:3px solid #461D7C; background:rgba(70,29,124,0.07);";
-        oaTab.style.cssText = "padding:8px 16px; cursor:pointer; font-size:13px; color:#7a6d96; border-bottom:3px solid transparent; background:transparent;";
-    }
+    oaTab.style.cssText  = `padding:8px 16px; cursor:pointer; font-size:13px; color:${isOA?"#461D7C; font-weight:700; border-bottom:3px solid #461D7C; background:rgba(70,29,124,0.07)":"#7a6d96; border-bottom:3px solid transparent; background:transparent"};`;
+    pubTab.style.cssText = `padding:8px 16px; cursor:pointer; font-size:13px; color:${!isOA?"#461D7C; font-weight:700; border-bottom:3px solid #461D7C; background:rgba(70,29,124,0.07)":"#7a6d96; border-bottom:3px solid transparent; background:transparent"};`;
 }
 
-// ── Destroy and recreate chart ──
 function makeChart(id, config) {
     if (charts[id]) charts[id].destroy();
     const el = document.getElementById(id);
     if (!el) return;
-    const ctx = el.getContext("2d");
-    charts[id] = new Chart(ctx, config);
+    charts[id] = new Chart(el.getContext("2d"), config);
 }
 
-// ── Main update function ──
 function filterData() {
     const fdf = getFiltered();
     updateStatCards(fdf);
@@ -539,16 +677,14 @@ function filterData() {
     updateTables(fdf);
 }
 
-// ── Stat cards ──
 function updateStatCards(fdf) {
     const total = fdf.length;
-    const totalCit = fdf.reduce((s, w) => s + w.citations, 0);
-    const avgCit = total ? (totalCit / total).toFixed(1) : 0;
-    const oaCount = fdf.filter(w => w.oa === "Yes").length;
-    const oaPct = total ? Math.round(oaCount / total * 100) : 0;
+    const totalCit = fdf.reduce((s,w)=>s+w.citations,0);
+    const avgCit = total ? (totalCit/total).toFixed(1) : 0;
+    const oaCount = fdf.filter(w=>w.oa==="Yes").length;
+    const oaPct = total ? Math.round(oaCount/total*100) : 0;
     const minYear = document.getElementById("year-min").value;
     const maxYear = document.getElementById("year-max").value;
-
     document.getElementById("stat-cards").innerHTML = `
         <div class="stat-card" style="border-left:4px solid ${PURPLE}">
             <div class="stat-label">Works</div>
@@ -573,121 +709,63 @@ function updateStatCards(fdf) {
     `;
 }
 
-// ── Charts ──
 function updateCharts(fdf) {
     const minYear = document.getElementById("year-min").value;
     const maxYear = document.getElementById("year-max").value;
-
-    // Update subtitles
     const pubsSub = document.getElementById("pubs-year-sub");
     if (pubsSub) pubsSub.textContent = `${minYear}–${maxYear}`;
     const trendsSub = document.getElementById("trends-sub");
     if (trendsSub) trendsSub.textContent = `OA breakdown & top 5 publishers · ${minYear}–${maxYear}`;
 
-    // Publications per year
     const yearCounts = {};
-    fdf.forEach(w => { if (w.year) yearCounts[w.year] = (yearCounts[w.year] || 0) + 1; });
+    fdf.forEach(w => { if (w.year) yearCounts[w.year] = (yearCounts[w.year]||0)+1; });
     const years = Object.keys(yearCounts).sort();
     makeChart("chart-pubs-year", {
         type: "bar",
-        data: {
-            labels: years,
-            datasets: [{ data: years.map(y => yearCounts[y]), backgroundColor: PURPLE, borderWidth: 0 }]
-        },
+        data: { labels: years, datasets: [{ data: years.map(y=>yearCounts[y]), backgroundColor: PURPLE, borderWidth: 0 }] },
         options: {
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    anchor: "end", align: "start", color: "white",
-                    font: { weight: "bold", size: 11 },
-                    formatter: v => v.toLocaleString()
-                }
-            },
-            scales: {
-                x: { grid: { display: false }, title: { display: false } },
-                y: { grid: { display: true }, border: { display: false } }
-            }
+            plugins: { legend: { display: false }, datalabels: { anchor: "end", align: "start", color: "white", font: { weight: "bold", size: 11 }, formatter: v=>v.toLocaleString() } },
+            scales: { x: { grid: { display: false } }, y: { grid: { display: true } } }
         }
     });
 
-    // OA Status pie
     const oaCounts = { Yes: 0, No: 0 };
-    fdf.forEach(w => { if (w.oa) oaCounts[w.oa] = (oaCounts[w.oa] || 0) + 1; });
+    fdf.forEach(w => { if (w.oa) oaCounts[w.oa] = (oaCounts[w.oa]||0)+1; });
     makeChart("chart-oa", {
         type: "doughnut",
-        data: {
-            labels: ["Open Access", "Closed"],
-            datasets: [{ data: [oaCounts.Yes, oaCounts.No], backgroundColor: [GREEN, "#a6a6a6"], borderWidth: 0 }]
-        },
-        options: {
-            plugins: {
-                legend: { position: "bottom" },
-                datalabels: {
-                    display: true,
-                    color: "white",
-                    font: { weight: "bold", size: 13 },
-                    formatter: (value, ctx) => {
-                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                        return Math.round(value / total * 100) + "%";
-                    }
-                }
-            }
-        }
+        data: { labels: ["Open Access","Closed"], datasets: [{ data: [oaCounts.Yes, oaCounts.No], backgroundColor: [GREEN,"#a6a6a6"], borderWidth: 0 }] },
+        options: { plugins: { legend: { position: "bottom" }, datalabels: { display: true, color: "white", font: { weight: "bold", size: 13 }, formatter: (v,ctx) => { const t=ctx.dataset.data.reduce((a,b)=>a+b,0); return Math.round(v/t*100)+"%"; } } } }
     });
 
-    // Work types pie
     const typeCounts = {};
-    fdf.forEach(w => { if (w.type) typeCounts[w.type] = (typeCounts[w.type] || 0) + 1; });
-    const typeEntries = Object.entries(typeCounts).sort((a,b) => b[1]-a[1]).slice(0, 6);
+    fdf.forEach(w => { if (w.type) typeCounts[w.type] = (typeCounts[w.type]||0)+1; });
+    const typeEntries = Object.entries(typeCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
     makeChart("chart-types", {
         type: "doughnut",
-        data: {
-            labels: typeEntries.map(e => e[0]),
-            datasets: [{ data: typeEntries.map(e => e[1]), backgroundColor: [PURPLE, GOLD, GREEN, "#7c3aed", "#f97316", "#a6a6a6"], borderWidth: 0 }]
-        },
-        options: {
-            plugins: {
-                legend: { position: "bottom" },
-                datalabels: { display: false }
-            }
-        }
+        data: { labels: typeEntries.map(e=>e[0]), datasets: [{ data: typeEntries.map(e=>e[1]), backgroundColor: [PURPLE,GOLD,GREEN,"#7c3aed","#f97316","#a6a6a6"], borderWidth: 0 }] },
+        options: { plugins: { legend: { position: "bottom" }, datalabels: { display: false } } }
     });
 
-    // APC by year
     const apcByYear = {};
-    fdf.forEach(w => { if (w.apc_list && w.year) apcByYear[w.year] = (apcByYear[w.year] || 0) + w.apc_list; });
+    fdf.forEach(w => { if (w.apc_list && w.year) apcByYear[w.year] = (apcByYear[w.year]||0)+w.apc_list; });
     const apcYears = Object.keys(apcByYear).sort();
     makeChart("chart-apc", {
         type: "bar",
-        data: {
-            labels: apcYears,
-            datasets: [{ data: apcYears.map(y => apcByYear[y]), backgroundColor: "#6aaa5e", borderWidth: 0 }]
-        },
+        data: { labels: apcYears, datasets: [{ data: apcYears.map(y=>apcByYear[y]), backgroundColor: "#6aaa5e", borderWidth: 0 }] },
         options: {
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    anchor: "end", align: "start", color: "white",
-                    font: { weight: "bold", size: 10 },
-                    formatter: v => "$" + (v >= 1000000 ? (v/1000000).toFixed(1)+"M" : (v/1000).toFixed(0)+"K")
-                }
-            },
-            scales: {
-                y: { ticks: { callback: v => "$" + (v >= 1000000 ? (v/1000000).toFixed(1)+"M" : (v/1000).toFixed(0)+"K") } },
-                x: { grid: { display: false } }
-            }
+            plugins: { legend: { display: false }, datalabels: { anchor: "end", align: "start", color: "white", font: { weight: "bold", size: 14 }, formatter: v=>"$"+(v>=1000000?(v/1000000).toFixed(1)+"M":(v/1000).toFixed(0)+"K") } },
+            scales: { y: { ticks: { callback: v=>"$"+(v>=1000000?(v/1000000).toFixed(1)+"M":(v/1000).toFixed(0)+"K") } }, x: { grid: { display: false } } }
         }
     });
 
-    // OA Trends line chart
     const trendData = {};
     fdf.forEach(w => {
         if (!w.year) return;
-        if (!trendData[w.year]) trendData[w.year] = { total: 0, oa: 0, gold: 0, hybrid: 0 };
+        if (!trendData[w.year]) trendData[w.year] = { total:0, oa:0, gold:0, hybrid:0 };
         trendData[w.year].total++;
-        if (w.oa === "Yes") trendData[w.year].oa++;
-        if (w.oa_status === "gold") trendData[w.year].gold++;
-        if (w.oa_status === "hybrid") trendData[w.year].hybrid++;
+        if (w.oa==="Yes") trendData[w.year].oa++;
+        if (w.oa_status==="gold") trendData[w.year].gold++;
+        if (w.oa_status==="hybrid") trendData[w.year].hybrid++;
     });
     const trendYears = Object.keys(trendData).sort();
     makeChart("chart-trends", {
@@ -695,102 +773,55 @@ function updateCharts(fdf) {
         data: {
             labels: trendYears,
             datasets: [
-                { label: "Total",     data: trendYears.map(y => trendData[y].total),  borderColor: PURPLE,    borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
-                { label: "OA (All)",  data: trendYears.map(y => trendData[y].oa),     borderColor: GREEN,     borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
-                { label: "Gold OA",   data: trendYears.map(y => trendData[y].gold),   borderColor: GOLD,      borderWidth: 2.5, pointRadius: 0, borderDash: [5,5], fill: false, tension: 0.1 },
-                { label: "Hybrid OA", data: trendYears.map(y => trendData[y].hybrid), borderColor: "#7c3aed", borderWidth: 2.5, pointRadius: 0, borderDash: [2,2], fill: false, tension: 0.1 },
+                { label: "Total",     data: trendYears.map(y=>trendData[y].total),  borderColor: PURPLE,    borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
+                { label: "OA (All)",  data: trendYears.map(y=>trendData[y].oa),     borderColor: GREEN,     borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
+                { label: "Gold OA",   data: trendYears.map(y=>trendData[y].gold),   borderColor: GOLD,      borderWidth: 2.5, pointRadius: 0, borderDash: [5,5], fill: false, tension: 0.1 },
+                { label: "Hybrid OA", data: trendYears.map(y=>trendData[y].hybrid), borderColor: "#7c3aed", borderWidth: 2.5, pointRadius: 0, borderDash: [2,2], fill: false, tension: 0.1 },
             ]
         },
-        options: {
-            plugins: {
-                legend: {
-                    position: "top",
-                    labels: {
-                        usePointStyle: true,    // ← use line/point style instead of box
-                        pointStyle: "line",     // ← thin line in legend
-                        boxWidth: 30,           // ← wider line in legend
-                        font: { size: 12 },
-                        padding: 16,
-                    }
-                },
-                datalabels: { display: false }
-            },
-            scales: { x: { grid: { display: false } } }
-        }
+        options: { plugins: { legend: { position: "top", labels: { usePointStyle: true, pointStyle: "line", boxWidth: 30, font: { size: 12 }, padding: 16 } }, datalabels: { display: false } }, scales: { x: { grid: { display: false } } } }
     });
 
-    // Publisher trends
     const publisherCounts = {};
-    fdf.forEach(w => { if (w.publisher && w.year) publisherCounts[w.publisher] = (publisherCounts[w.publisher] || 0) + 1; });
-    const top5Publishers = Object.entries(publisherCounts).sort((a,b) => b[1]-a[1]).slice(0,5).map(e => e[0]);
-    const pubTrendData = {};
+    fdf.forEach(w => { if (w.publisher && w.year) publisherCounts[w.publisher] = (publisherCounts[w.publisher]||0)+1; });
+    const top5 = Object.entries(publisherCounts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(e=>e[0]);
+    const pubTrend = {};
     fdf.forEach(w => {
-        if (!w.publisher || !w.year || !top5Publishers.includes(w.publisher)) return;
-        if (!pubTrendData[w.publisher]) pubTrendData[w.publisher] = {};
-        pubTrendData[w.publisher][w.year] = (pubTrendData[w.publisher][w.year] || 0) + 1;
+        if (!w.publisher||!w.year||!top5.includes(w.publisher)) return;
+        if (!pubTrend[w.publisher]) pubTrend[w.publisher] = {};
+        pubTrend[w.publisher][w.year] = (pubTrend[w.publisher][w.year]||0)+1;
     });
-    const pubColors = ["#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f"];
-    const trendYearsList = [...new Set(fdf.map(w => w.year).filter(Boolean))].sort();
+    const pubColors = ["#4e79a7","#f28e2b","#e15759","#76b7b2","#59a14f"];
+    const trendYearsList = [...new Set(fdf.map(w=>w.year).filter(Boolean))].sort();
     makeChart("chart-publisher-trends", {
         type: "line",
-        data: {
-            labels: trendYearsList,
-            datasets: top5Publishers.map((pub, i) => ({
-                label: pub,
-                data: trendYearsList.map(y => pubTrendData[pub]?.[y] || 0),
-                borderColor: pubColors[i], backgroundColor: pubColors[i],
-                fill: false, tension: 0.1, pointRadius: 4,
-            }))
-        },
-        options: {
-            plugins: { legend: { position: "top", labels: { font: { size: 11 } } }, datalabels: { display: false } },
-            scales: { x: { grid: { display: false } }, y: { grid: { display: true }, beginAtZero: true } }
-        }
+        data: { labels: trendYearsList, datasets: top5.map((pub,i)=>({ label: pub, data: trendYearsList.map(y=>pubTrend[pub]?.[y]||0), borderColor: pubColors[i], backgroundColor: pubColors[i], fill: false, tension: 0.1, pointRadius: 4 })) },
+        options: { plugins: { legend: { position: "top", labels: { font: { size: 11 } } }, datalabels: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
     });
 
-    // Top journals
     const journalCounts = {};
-    fdf.forEach(w => { if (w.journal) journalCounts[w.journal] = (journalCounts[w.journal] || 0) + 1; });
-    const topJournals = Object.entries(journalCounts).sort((a,b) => b[1]-a[1]).slice(0, 10);
+    fdf.forEach(w => { if (w.journal) journalCounts[w.journal] = (journalCounts[w.journal]||0)+1; });
+    const topJournals = Object.entries(journalCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
     makeChart("chart-journals", {
         type: "bar",
-        data: {
-            labels: topJournals.map(e => e[0].length > 35 ? e[0].slice(0,35)+"..." : e[0]),
-            datasets: [{ data: topJournals.map(e => e[1]), backgroundColor: "#c9a800", borderWidth: 0 }]
-        },
-        options: {
-            indexAxis: "y",
-            plugins: { legend: { display: false }, datalabels: { display: false } },
-            scales: { x: { grid: { display: true } }, y: { grid: { display: false } } }
-        }
+        data: { labels: topJournals.map(e=>e[0].length>35?e[0].slice(0,35)+"...":e[0]), datasets: [{ data: topJournals.map(e=>e[1]), backgroundColor: "#c9a800", borderWidth: 0 }] },
+        options: { indexAxis: "y", plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { grid: { display: true } }, y: { grid: { display: false } } } }
     });
 
-    // Funders
     fetch(`${BASE_URL}/works?filter=institutions.ror:${ROR_ID}&group-by=funders.id&per-page=10`)
-        .then(r => r.json())
-        .then(data => {
-            const funders = (data.group_by || []).map(g => ({ name: g.key_display_name || g.key, count: g.count }));
+        .then(r=>r.json()).then(data => {
+            const funders = (data.group_by||[]).map(g=>({ name: g.key_display_name||g.key, count: g.count }));
             makeChart("chart-funders", {
                 type: "bar",
-                data: {
-                    labels: funders.map(f => f.name.length > 35 ? f.name.slice(0,35)+"..." : f.name),
-                    datasets: [{ data: funders.map(f => f.count), backgroundColor: PURPLE, borderWidth: 0 }]
-                },
-                options: {
-                    indexAxis: "y",
-                    plugins: { legend: { display: false }, datalabels: { display: false } },
-                    scales: { x: { grid: { display: true } }, y: { grid: { display: false } } }
-                }
+                data: { labels: funders.map(f=>f.name.length>35?f.name.slice(0,35)+"...":f.name), datasets: [{ data: funders.map(f=>f.count), backgroundColor: PURPLE, borderWidth: 0 }] },
+                options: { indexAxis: "y", plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { grid: { display: true } }, y: { grid: { display: false } } } }
             });
         });
 }
 
-// ── Tables ──
 function updateTables(fdf) {
     const minYear = document.getElementById("year-min").value;
     const maxYear = document.getElementById("year-max").value;
-
-    // Update subtitles
     const pubSub = document.getElementById("pub-sub");
     if (pubSub) pubSub.textContent = `${fdf.length.toLocaleString()} works · ${minYear}–${maxYear} · use column filters to search`;
     const citedSub = document.getElementById("cited-sub");
@@ -800,106 +831,73 @@ function updateTables(fdf) {
     const topicsSub = document.getElementById("topics-sub");
     if (topicsSub) topicsSub.textContent = `Primary topics · ${minYear}–${maxYear}`;
 
-    // Recent publications
-    const sorted = [...fdf].sort((a,b) => b.pub_date.localeCompare(a.pub_date)).slice(0, 200);
+    const sorted = [...fdf].sort((a,b)=>b.pub_date.localeCompare(a.pub_date)).slice(0,200);
+    const badgeStyles = { gold:"background:#fef9c3;", green:"background:#dcfce7;", hybrid:"background:#e0f2fe;", bronze:"background:#ffedd5;", closed:"background:#f3f4f6;", unknown:"background:#f3f4f6;" };
     document.getElementById("publications-body").innerHTML = sorted.map(w => {
-        const badgeStyles = {
-            gold:    "background:#fef9c3;",
-            green:   "background:#dcfce7;",
-            hybrid:  "background:#e0f2fe;",
-            bronze:  "background:#ffedd5;",
-            closed:  "background:#f3f4f6;",
-            unknown: "background:#f3f4f6;",
-        };
-        const cellStyle = badgeStyles[w.oa_status] || "background:#f3f4f6;";
-        return `
-        <tr>
-            <td style="white-space:normal; line-height:1.5; padding:12px;">
-                <a href="${w.id}" target="_blank" style="color:#2563eb;">${w.title}</a>
-            </td>
-            <td style="text-align:center; color:#7a6d96; font-size:12px; white-space:nowrap;">${w.type || ""}</td>
-            <td style="${cellStyle} text-align:center; font-size:12px; font-weight:600; white-space:nowrap;">${w.oa_status || ""}</td>
-            <td style="text-align:center; color:#7a6d96; font-size:12px; white-space:nowrap;">${w.pub_date || ""}</td>
-            <td style="text-align:right; font-weight:700; font-size:12px; white-space:nowrap;">
-                ${w.apc_list ? "$" + Math.round(w.apc_list).toLocaleString() : "—"}
-            </td>
-        </tr>
-    `}).join("");
-
+        const cellStyle = badgeStyles[w.oa_status]||"background:#f3f4f6;";
+        return `<tr>
+            <td style="white-space:normal; line-height:1.5; padding:12px;"><a href="${w.id}" target="_blank" style="color:#2563eb;">${w.title}</a></td>
+            <td style="text-align:center; color:#7a6d96; font-size:12px; white-space:nowrap;">${w.type||""}</td>
+            <td style="${cellStyle} text-align:center; font-size:12px; font-weight:600; white-space:nowrap;">${w.oa_status||""}</td>
+            <td style="text-align:center; color:#7a6d96; font-size:12px; white-space:nowrap;">${w.pub_date||""}</td>
+            <td style="text-align:right; font-weight:700; font-size:12px; white-space:nowrap;">${w.apc_list?"$"+Math.round(w.apc_list).toLocaleString():"—"}</td>
+        </tr>`;
+    }).join("");
     if ($.fn.DataTable.isDataTable("#table-publications")) $("#table-publications").DataTable().destroy();
-    $("#table-publications").DataTable({
-        pageLength: 25,
-        order: [[3, "desc"]],
-        columnDefs: [
-            { targets: 0, width: "60%" },
-            { targets: [1,2,3,4], width: "auto", className: "dt-center" }
-        ]
-    });
+    $("#table-publications").DataTable({ pageLength: 25, order: [[3,"desc"]], columnDefs: [{ targets: 0, width: "60%" }, { targets: [1,2,3,4], width: "auto" }] });
 
-    // Top cited
-    const topCited = [...fdf].sort((a,b) => b.citations - a.citations).slice(0, 25);
-    document.getElementById("cited-body").innerHTML = topCited.map((w, i) => `
+    const topCited = [...fdf].sort((a,b)=>b.citations-a.citations).slice(0,25);
+    document.getElementById("cited-body").innerHTML = topCited.map((w,i) => `
         <tr>
-            <td style="text-align:center; color:#7a6d96; width:42px;">${i + 1}</td>
-            <td style="max-width:400px; white-space:normal; line-height:1.4;">
-                <a href="${w.id}" target="_blank" style="color:#461D7C;">${w.title}</a>
-            </td>
-            <td style="text-align:center; color:#7a6d96;">${w.year || ""}</td>
+            <td style="text-align:center; color:#7a6d96; width:42px;">${i+1}</td>
+            <td style="max-width:400px; white-space:normal; line-height:1.4;"><a href="${w.id}" target="_blank" style="color:#461D7C;">${w.title}</a></td>
+            <td style="text-align:center; color:#7a6d96;">${w.year||""}</td>
             <td style="text-align:right; font-weight:700;">${w.citations.toLocaleString()}</td>
-            <td>${w.journal || ""}</td>
-            <td style="text-align:center; font-weight:700; color:${w.oa === 'Yes' ? '#16a34a' : '#7a6d96'};">${w.oa || ""}</td>
-            <td style="text-align:center; color:#7a6d96;">${w.type || ""}</td>
-        </tr>
-    `).join("");
+            <td>${w.journal||""}</td>
+            <td style="text-align:center; font-weight:700; color:${w.oa==="Yes"?"#16a34a":"#7a6d96"};">${w.oa||""}</td>
+            <td style="text-align:center; color:#7a6d96;">${w.type||""}</td>
+        </tr>`).join("");
     if ($.fn.DataTable.isDataTable("#table-cited")) $("#table-cited").DataTable().destroy();
-    $("#table-cited").DataTable({ pageLength: 25, order: [[3, "desc"]], columnDefs: [{ targets: 0, width: "42px" }, { targets: 1, width: "40%" }] });
+    $("#table-cited").DataTable({ pageLength: 25, order: [[3,"desc"]], columnDefs: [{ targets: 0, width: "42px" }, { targets: 1, width: "40%" }] });
 
-    // Top authors
     const authorCounts = {};
-    fdf.forEach(w => {
-        if (w.authors) w.authors.split("|").forEach(a => { if (a) authorCounts[a] = (authorCounts[a] || 0) + 1; });
-    });
-    const topAuthors = Object.entries(authorCounts).sort((a,b) => b[1]-a[1]).slice(0, 10);
-    document.getElementById("authors-body").innerHTML = topAuthors.map((e, i) => `
-        <tr>
-            <td style="text-align:center; color:#7a6d96; width:44px;">${i + 1}</td>
-            <td>${e[0]}</td>
-            <td style="text-align:right; font-weight:700;">${e[1].toLocaleString()}</td>
-        </tr>
-    `).join("");
+    fdf.forEach(w => { if (w.authors) w.authors.split("|").forEach(a => { if (a) authorCounts[a] = (authorCounts[a]||0)+1; }); });
+    const topAuthors = Object.entries(authorCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    document.getElementById("authors-body").innerHTML = topAuthors.map((e,i) => `
+        <tr><td style="text-align:center; color:#7a6d96; width:44px;">${i+1}</td><td>${e[0]}</td><td style="text-align:right; font-weight:700;">${e[1].toLocaleString()}</td></tr>`).join("");
     if ($.fn.DataTable.isDataTable("#table-authors")) $("#table-authors").DataTable().destroy();
-    $("#table-authors").DataTable({ pageLength: 10, order: [[2, "desc"]], searching: false, paging: false, info: false });
+    $("#table-authors").DataTable({ pageLength: 10, order: [[2,"desc"]], searching: false, paging: false, info: false });
 
-    // Top topics
     const topicCounts = {};
-    fdf.forEach(w => { if (w.topic) topicCounts[w.topic] = (topicCounts[w.topic] || 0) + 1; });
-    const topTopics = Object.entries(topicCounts).sort((a,b) => b[1]-a[1]).slice(0, 10);
-    document.getElementById("topics-body").innerHTML = topTopics.map((e, i) => `
-        <tr>
-            <td style="text-align:center; color:#7a6d96; width:44px;">${i + 1}</td>
-            <td>${e[0]}</td>
-            <td style="text-align:right; font-weight:700;">${e[1].toLocaleString()}</td>
-        </tr>
-    `).join("");
+    fdf.forEach(w => { if (w.topic) topicCounts[w.topic] = (topicCounts[w.topic]||0)+1; });
+    const topTopics = Object.entries(topicCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    document.getElementById("topics-body").innerHTML = topTopics.map((e,i) => `
+        <tr><td style="text-align:center; color:#7a6d96; width:44px;">${i+1}</td><td>${e[0]}</td><td style="text-align:right; font-weight:700;">${e[1].toLocaleString()}</td></tr>`).join("");
     if ($.fn.DataTable.isDataTable("#table-topics")) $("#table-topics").DataTable().destroy();
-    $("#table-topics").DataTable({ pageLength: 10, order: [[2, "desc"]], searching: false, paging: false, info: false });
+    $("#table-topics").DataTable({ pageLength: 10, order: [[2,"desc"]], searching: false, paging: false, info: false });
 }
 
-// ── Fetch institution info ──
 async function fetchInstitution() {
     const response = await fetch("https://api.openalex.org/institutions/I121820613");
     const data = await response.json();
-    document.getElementById("inst-works").textContent = data.works_count?.toLocaleString() || "N/A";
-    document.getElementById("inst-cites").textContent = data.cited_by_count?.toLocaleString() || "N/A";
+    document.getElementById("inst-works").textContent = data.works_count?.toLocaleString()||"N/A";
+    document.getElementById("inst-cites").textContent = data.cited_by_count?.toLocaleString()||"N/A";
 }
 
-// ── Initialize ──
 async function init() {
     setupYearSelectors();
     fetchInstitution();
+
+    // Step 1: Load summary data instantly for charts
+    document.getElementById("stat-cards").innerHTML = '<div class="loading">Loading charts...</div>';
+    summaryData = await fetchSummaryData();
+    renderChartsFromSummary(summaryData);
+
+    // Step 2: Load full works in background for tables
+    document.getElementById("stat-cards").style.display = "flex";
     const raw = await fetchWorks();
     allWorks = processWorks(raw);
-    filterData();
+    filterData(); // replace summary charts with full data charts
 }
 
 init();
