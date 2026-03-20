@@ -766,7 +766,9 @@ function updateTables(fdf) {
             </td>
             <td style="text-align:center; color:#7a6d96; padding:14px 8px;">${w.year||""}</td>
             <td style="text-align:right; font-weight:700; padding:14px 8px;">${w.citations.toLocaleString()}</td>
-            <td style="padding:14px 8px;">${w.journal||""}</td>
+            <td style="max-width:400px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:14px 12px;">
+                <a href="${w.id}" target="_blank" style="color:#2563eb; text-decoration:none;">${w.journal}</a>
+            </td>    
             <td style="text-align:center; font-weight:700; padding:14px 8px; color:${w.oa==="Yes"?"#16a34a":"#7a6d96"};">${w.oa||""}</td>
             <td style="text-align:center; color:#7a6d96; padding:14px 8px;">${w.type||""}</td>
         </tr>`).join("");
