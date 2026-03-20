@@ -800,7 +800,7 @@ function updateTables(fdf) {
     const topicsSub = document.getElementById("topics-sub");
     if (topicsSub) topicsSub.textContent = `Primary topics · ${minYear}–${maxYear}`;
 
-        // Recent publications
+    // Recent publications
     const sorted = [...fdf].sort((a,b) => b.pub_date.localeCompare(a.pub_date)).slice(0, 200);
     document.getElementById("publications-body").innerHTML = sorted.map(w => {
         const badgeStyles = {
