@@ -50,25 +50,16 @@
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
         .grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 
-        .tabs { 
-            display: flex; 
-            border-bottom: 1px solid #ddd5ee; 
-            margin: 16px 0 0; 
-        }
-        .tab { 
-            flex: 1;                    /* ← makes each tab equal width */
-            text-align: center;         /* ← centers the text */
-            padding: 14px 16px;         /* ← taller tabs */
-            cursor: pointer;
-            color: #7a6d96; 
-            font-size: 15px;            /* ← larger font */
+        .tabs { display: flex; border-bottom: 1px solid #ddd5ee; margin: 16px 0 0; }
+        .tab {
+            flex: 1; text-align: center; padding: 14px 16px;
+            cursor: pointer; color: #7a6d96; font-size: 15px;
             border-bottom: 3px solid transparent;
         }
-        .tab.active { 
-            color: #461D7C; 
-            font-weight: 700; 
-            border-bottom: 3px solid #461D7C; 
-            background: rgba(70,29,124,0.07); 
+        .tab.active {
+            color: #461D7C; font-weight: 700;
+            border-bottom: 3px solid #461D7C;
+            background: rgba(70,29,124,0.07);
         }
         .tab-content { display: none; padding-top: 22px; padding-bottom: 60px; }
         .tab-content.active { display: block; }
@@ -86,44 +77,24 @@
         .footer a { color: #FDD023; }
 
         canvas { max-height: 300px; }
-
         #chart-pubs-year { height: 250px !important; max-height: 250px; }
-        #chart-apc       { height: 280px !important; max-height: 280px; }
+        #chart-apc       { height: 250px !important; max-height: 250px; }
         #chart-types     { height: 220px !important; max-height: 220px; }
         #chart-oa        { height: 220px !important; max-height: 220px; }
 
-        .badge { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; display: inline-block; }
-        .badge-gold    { background: #fef9c3; color: #854d0e; }
-        .badge-green   { background: #dcfce7; color: #166534; }
-        .badge-hybrid  { background: #e0f2fe; color: #075985; }
-        .badge-bronze  { background: #ffedd5; color: #9a3412; }
-        .badge-closed  { background: #f3f4f6; color: #374151; }
-        .badge-unknown { background: #f3f4f6; color: #6b7280; }
-
         input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #461D7C;
-            border: 2px solid white;
-           box-shadow: 0 1px 4px rgba(70,29,124,0.3);
-            pointer-events: auto;
-            cursor: pointer;
+            -webkit-appearance: none; appearance: none;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: #461D7C; border: 2px solid white;
+            box-shadow: 0 1px 4px rgba(70,29,124,0.3);
+            pointer-events: auto; cursor: pointer;
         }
         input[type="range"]::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #461D7C;
-            border: 2px solid white;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: #461D7C; border: 2px solid white;
             box-shadow: 0 1px 4px rgba(70,29,124,0.3);
-            pointer-events: auto;
-           cursor: pointer;
+            pointer-events: auto; cursor: pointer;
         }
-
-        #chart-apc { height: 250px !important; max-height: 250px; }
 
         #table-publications tbody tr { height: auto; min-height: 60px; }
         #table-publications tbody td { vertical-align: middle; }
@@ -133,6 +104,13 @@
         #table-cited tbody tr { height: auto; min-height: 60px; }
         #table-cited tbody td { vertical-align: middle; }
 
+        #table-authors thead th, #table-topics thead th {
+            background: #f0ecf7; color: #461D7C; font-size: 11px;
+            text-transform: uppercase; letter-spacing: 0.06em;
+        }
+        #table-authors tbody tr, #table-topics tbody tr { height: auto; min-height: 50px; }
+        #table-authors tbody td, #table-topics tbody td { vertical-align: middle; }
+
         #table-cited tbody td:nth-child(2),
         #table-publications tbody td:nth-child(1) {
             max-width: 400px;
@@ -140,7 +118,6 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        
     </style>
 </head>
 <body>
@@ -158,7 +135,7 @@
 <!-- Institution strip -->
 <div style="max-width:1240px; margin:0 auto; padding:16px 28px 0;">
     <div style="display:flex; gap:12px; align-items:center; background:white; border:1px solid #ddd5ee; border-radius:11px; padding:11px 16px;">
-        <img src="https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Louisiana%20State%20University%20%28logo%29.svg" style="height: 38px; object-fit: contain;">
+        <img src="https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Louisiana%20State%20University%20%28logo%29.svg" style="height:38px; object-fit:contain;">
         <div style="flex:1;">
             <span style="font-weight:700; font-size:14px; color:#461D7C;">Louisiana State University</span>
             <span style="color:#7a6d96; font-size:12px;"> · Baton Rouge, LA</span>
@@ -174,46 +151,41 @@
 <div class="container">
     <!-- Year slider -->
     <div class="slider-container">
-    <div class="slider-label">Filter by Year:</div>
-    <div style="padding: 8px 0 0;">
-        <div style="position:relative; height:40px; margin: 0 10px;">
-            <!-- Track -->
-            <div id="slider-track" style="position:absolute; top:18px; left:0; right:0; height:2px; background:#ddd5ee; border-radius:2px;"></div>
-            <!-- Selected range highlight -->
-            <div id="slider-range" style="position:absolute; top:18px; height:2px; background:#461D7C; border-radius:2px;"></div>
-            <!-- Min handle -->
-            <input type="range" id="year-min" min="2020" max="2026" value="2020" step="1"
-                   style="position:absolute; width:100%; height:2px; background:transparent; appearance:none; -webkit-appearance:none; pointer-events:none; top:18px;">
-            <!-- Max handle -->
-            <input type="range" id="year-max" min="2020" max="2026" value="2026" step="1"
-                   style="position:absolute; width:100%; height:2px; background:transparent; appearance:none; -webkit-appearance:none; pointer-events:none; top:18px;">
-        </div>
-        <!-- Tick marks and labels -->
-        <div style="display:flex; justify-content:space-between; margin: 4px 10px 0; position:relative;">
-            <div id="tick-2020" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2020,2020)">
-                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2020
+        <div class="slider-label">Filter by Year:</div>
+        <div style="padding:8px 0 0;">
+            <div style="position:relative; height:40px; margin:0 10px;">
+                <div id="slider-track" style="position:absolute; top:18px; left:0; right:0; height:2px; background:#ddd5ee; border-radius:2px;"></div>
+                <div id="slider-range" style="position:absolute; top:18px; height:2px; background:#461D7C; border-radius:2px;"></div>
+                <input type="range" id="year-min" min="2020" max="2026" value="2020" step="1"
+                       style="position:absolute; width:100%; height:2px; background:transparent; appearance:none; -webkit-appearance:none; pointer-events:none; top:18px;">
+                <input type="range" id="year-max" min="2020" max="2026" value="2026" step="1"
+                       style="position:absolute; width:100%; height:2px; background:transparent; appearance:none; -webkit-appearance:none; pointer-events:none; top:18px;">
             </div>
-            <div id="tick-2021" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2021,2021)">
-                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2021
-            </div>
-            <div id="tick-2022" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2022,2022)">
-                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2022
-            </div>
-            <div id="tick-2023" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2023,2023)">
-                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2023
-            </div>
-            <div id="tick-2024" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2024,2024)">
-                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2024
-            </div>
-            <div id="tick-2025" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2025,2025)">
-                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2025
-            </div>
-            <div id="tick-2026" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2026,2026)">
-                <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2026
+            <div style="display:flex; justify-content:space-between; margin:4px 10px 0;">
+                <div id="tick-2020" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2020,2026)">
+                    <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2020
+                </div>
+                <div id="tick-2021" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer; visibility:hidden;" onclick="setYearRange(2021,2021)">
+                    <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2021
+                </div>
+                <div id="tick-2022" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2022,2022)">
+                    <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2022
+                </div>
+                <div id="tick-2023" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer; visibility:hidden;" onclick="setYearRange(2023,2023)">
+                    <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2023
+                </div>
+                <div id="tick-2024" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2024,2024)">
+                    <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2024
+                </div>
+                <div id="tick-2025" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer; visibility:hidden;" onclick="setYearRange(2025,2025)">
+                    <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2025
+                </div>
+                <div id="tick-2026" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2026,2026)">
+                    <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2026
+                </div>
             </div>
         </div>
     </div>
-</div>
 
     <!-- Tabs -->
     <div class="tabs">
@@ -252,7 +224,7 @@
             </div>
             <div class="card">
                 <div class="section-title">Publication Trends</div>
-                <div class="section-sub" id="trends-sub" style="margin-bottom: 16px;">OA breakdown & top 5 publishers · 2020–2026</div>
+                <div class="section-sub" id="trends-sub" style="margin-bottom:16px;">OA breakdown & top 5 publishers · 2020–2026</div>
                 <div style="display:flex; border-bottom:1px solid #ddd5ee; margin-bottom:20px;">
                     <div id="trends-tab-oa" onclick="showTrendsTab('oa')"
                          style="padding:8px 16px; cursor:pointer; font-size:13px; color:#461D7C; font-weight:700; border-bottom:3px solid #461D7C; background:rgba(70,29,124,0.07);">
@@ -263,12 +235,8 @@
                         By Publisher
                     </div>
                 </div>
-                <div id="trends-oa-panel">
-                    <canvas id="chart-trends"></canvas>
-                </div>
-                <div id="trends-pub-panel" style="display:none;">
-                    <canvas id="chart-publisher-trends"></canvas>
-                </div>
+                <div id="trends-oa-panel"><canvas id="chart-trends"></canvas></div>
+                <div id="trends-pub-panel" style="display:none;"><canvas id="chart-publisher-trends"></canvas></div>
             </div>
         </div>
         <div class="grid-2">
@@ -290,13 +258,7 @@
             <div class="section-sub" id="pub-sub">Loading...</div>
             <table id="table-publications" class="display" style="width:100%">
                 <thead>
-                    <tr>
-                        <th>Work Title</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                        <th>APC</th>
-                    </tr>
+                    <tr><th>Work Title</th><th>Type</th><th>Status</th><th>Date</th><th>APC</th></tr>
                 </thead>
                 <tbody id="publications-body"></tbody>
             </table>
@@ -310,15 +272,7 @@
             <div class="section-sub" id="cited-sub">Sorted by citation count · 2020–2026</div>
             <table id="table-cited" class="display" style="width:100%">
                 <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Title</th>
-                        <th>Year</th>
-                        <th>Citations</th>
-                        <th>Journal</th>
-                        <th>OA</th>
-                        <th>Type</th>
-                    </tr>
+                    <tr><th>#</th><th>Title</th><th>Year</th><th>Citations</th><th>Journal</th><th>OA</th><th>Type</th></tr>
                 </thead>
                 <tbody id="cited-body"></tbody>
             </table>
@@ -376,7 +330,6 @@ let allWorks = [];
 let charts = {};
 let summaryData = {};
 
-// ── Fetch summary data (fast, group-by endpoints) ──
 async function fetchSummaryData() {
     const filter = `institutions.ror:${ROR_ID},from_publication_date:${START_YEAR}-01-01`;
     const [pubsByYear, byType, byOA, byJournal, byFunder, byTopic, byPublisher] = await Promise.all([
@@ -391,47 +344,33 @@ async function fetchSummaryData() {
     return { pubsByYear, byType, byOA, byJournal, byFunder, byTopic, byPublisher };
 }
 
-// ── Render charts from summary data ──
 function renderChartsFromSummary(summary) {
     const minYear = parseInt(document.getElementById("year-min").value);
     const maxYear = parseInt(document.getElementById("year-max").value);
 
-    // Publications per year
     const pubsData = (summary.pubsByYear.group_by || [])
         .filter(g => parseInt(g.key) >= minYear && parseInt(g.key) <= maxYear)
         .sort((a,b) => a.key - b.key);
+
     makeChart("chart-pubs-year", {
         type: "bar",
         data: { labels: pubsData.map(g=>g.key), datasets: [{ data: pubsData.map(g=>g.count), backgroundColor: PURPLE, borderWidth: 0 }] },
         options: {
             maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                datalabels: { anchor: "end", align: "start", color: "white", font: { weight: "bold", size: 11 }, formatter: v => v.toLocaleString() }
-            },
+            plugins: { legend: { display: false }, datalabels: { anchor: "end", align: "start", color: "white", font: { weight: "bold", size: 11 }, formatter: v => v.toLocaleString() } },
             scales: { x: { grid: { display: false } }, y: { grid: { display: true } } }
         }
     });
 
-    // OA Status
     const oaData = summary.byOA.group_by || [];
     const oaOpen = oaData.filter(g => g.key !== "closed" && g.key !== "unknown").reduce((s,g)=>s+g.count,0);
     const oaClosed = oaData.filter(g => g.key === "closed").reduce((s,g)=>s+g.count,0);
     makeChart("chart-oa", {
         type: "doughnut",
         data: { labels: ["Open Access", "Closed"], datasets: [{ data: [oaOpen, oaClosed], backgroundColor: [GREEN, "#a6a6a6"], borderWidth: 0 }] },
-        options: {
-            plugins: {
-                legend: { position: "bottom" },
-                datalabels: {
-                    display: true, color: "white", font: { weight: "bold", size: 13 },
-                    formatter: (value, ctx) => { const t = ctx.dataset.data.reduce((a,b)=>a+b,0); return Math.round(value/t*100)+"%"; }
-                }
-            }
-        }
+        options: { plugins: { legend: { position: "bottom" }, datalabels: { display: true, color: "white", font: { weight: "bold", size: 13 }, formatter: (v,ctx) => { const t=ctx.dataset.data.reduce((a,b)=>a+b,0); return Math.round(v/t*100)+"%"; } } } }
     });
 
-    // Work types
     const typeData = (summary.byType.group_by || []).slice(0,6);
     makeChart("chart-types", {
         type: "doughnut",
@@ -439,29 +378,20 @@ function renderChartsFromSummary(summary) {
         options: { plugins: { legend: { position: "bottom" }, datalabels: { display: false } } }
     });
 
-    // Top journals
     const journalData = (summary.byJournal.group_by || []).slice(0,10);
     makeChart("chart-journals", {
         type: "bar",
-        data: {
-            labels: journalData.map(g => (g.key_display_name||g.key).length > 35 ? (g.key_display_name||g.key).slice(0,35)+"..." : (g.key_display_name||g.key)),
-            datasets: [{ data: journalData.map(g=>g.count), backgroundColor: "#c9a800", borderWidth: 0 }]
-        },
+        data: { labels: journalData.map(g => (g.key_display_name||g.key).length>35?(g.key_display_name||g.key).slice(0,35)+"...":(g.key_display_name||g.key)), datasets: [{ data: journalData.map(g=>g.count), backgroundColor: "#c9a800", borderWidth: 0 }] },
         options: { indexAxis: "y", plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { grid: { display: true } }, y: { grid: { display: false } } } }
     });
 
-    // Funders
     const funderData = (summary.byFunder.group_by || []).slice(0,10);
     makeChart("chart-funders", {
         type: "bar",
-        data: {
-            labels: funderData.map(g => (g.key_display_name||g.key).length > 35 ? (g.key_display_name||g.key).slice(0,35)+"..." : (g.key_display_name||g.key)),
-            datasets: [{ data: funderData.map(g=>g.count), backgroundColor: PURPLE, borderWidth: 0 }]
-        },
+        data: { labels: funderData.map(g => (g.key_display_name||g.key).length>35?(g.key_display_name||g.key).slice(0,35)+"...":(g.key_display_name||g.key)), datasets: [{ data: funderData.map(g=>g.count), backgroundColor: PURPLE, borderWidth: 0 }] },
         options: { indexAxis: "y", plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { grid: { display: true } }, y: { grid: { display: false } } } }
     });
 
-    // OA Trends
     const trendYears = pubsData.map(g=>g.key);
     const oaTrendFilter = `institutions.ror:${ROR_ID},from_publication_date:${START_YEAR}-01-01`;
     Promise.all([
@@ -469,82 +399,47 @@ function renderChartsFromSummary(summary) {
         fetch(`${BASE_URL}/works?filter=${oaTrendFilter},open_access.is_oa:true&group-by=publication_year&per-page=20`).then(r=>r.json()),
         fetch(`${BASE_URL}/works?filter=${oaTrendFilter},open_access.oa_status:hybrid&group-by=publication_year&per-page=20`).then(r=>r.json()),
     ]).then(([gold, oa, hybrid]) => {
-        const toMap = (gb) => Object.fromEntries((gb.group_by||[]).map(g=>[g.key, g.count]));
-        const goldMap = toMap(gold), oaMap = toMap(oa), hybridMap = toMap(hybrid);
-        const totalMap = Object.fromEntries(pubsData.map(g=>[g.key, g.count]));
+        const toMap = gb => Object.fromEntries((gb.group_by||[]).map(g=>[g.key,g.count]));
+        const goldMap=toMap(gold), oaMap=toMap(oa), hybridMap=toMap(hybrid);
+        const totalMap=Object.fromEntries(pubsData.map(g=>[g.key,g.count]));
         makeChart("chart-trends", {
             type: "line",
-            data: {
-                labels: trendYears,
-                datasets: [
-                    { label: "Total",     data: trendYears.map(y=>totalMap[y]||0),  borderColor: PURPLE,    borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
-                    { label: "OA (All)",  data: trendYears.map(y=>oaMap[y]||0),     borderColor: GREEN,     borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
-                    { label: "Gold OA",   data: trendYears.map(y=>goldMap[y]||0),   borderColor: GOLD,      borderWidth: 2.5, pointRadius: 0, borderDash: [5,5], fill: false, tension: 0.1 },
-                    { label: "Hybrid OA", data: trendYears.map(y=>hybridMap[y]||0), borderColor: "#7c3aed", borderWidth: 2.5, pointRadius: 0, borderDash: [2,2], fill: false, tension: 0.1 },
-                ]
-            },
-            options: {
-                plugins: { legend: { position: "top", labels: { usePointStyle: true, pointStyle: "line", boxWidth: 30, font: { size: 12 }, padding: 16 } }, datalabels: { display: false } },
-                scales: { x: { grid: { display: false } } }
-            }
+            data: { labels: trendYears, datasets: [
+                { label: "Total",     data: trendYears.map(y=>totalMap[y]||0),  borderColor: PURPLE,    borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
+                { label: "OA (All)",  data: trendYears.map(y=>oaMap[y]||0),     borderColor: GREEN,     borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
+                { label: "Gold OA",   data: trendYears.map(y=>goldMap[y]||0),   borderColor: GOLD,      borderWidth: 2.5, pointRadius: 0, borderDash: [5,5], fill: false, tension: 0.1 },
+                { label: "Hybrid OA", data: trendYears.map(y=>hybridMap[y]||0), borderColor: "#7c3aed", borderWidth: 2.5, pointRadius: 0, borderDash: [2,2], fill: false, tension: 0.1 },
+            ]},
+            options: { plugins: { legend: { position: "top", labels: { usePointStyle: true, pointStyle: "line", boxWidth: 30, font: { size: 12 }, padding: 16 } }, datalabels: { display: false } }, scales: { x: { grid: { display: false } } } }
         });
     });
 
-    // Publisher trends
     const pubFilter = `institutions.ror:${ROR_ID},from_publication_date:${START_YEAR}-01-01`;
     const top5Publishers = (summary.byPublisher.group_by||[]).slice(0,5).map(g=>g.key_display_name||g.key);
     Promise.all(
         top5Publishers.map(pub =>
             fetch(`${BASE_URL}/works?filter=${pubFilter},primary_location.source.host_organization_lineage:${encodeURIComponent(pub)}&group-by=publication_year&per-page=20`)
-            .then(r=>r.json())
-            .then(d => ({ pub, data: Object.fromEntries((d.group_by||[]).map(g=>[g.key,g.count])) }))
+            .then(r=>r.json()).then(d=>({ pub, data: Object.fromEntries((d.group_by||[]).map(g=>[g.key,g.count])) }))
         )
     ).then(results => {
         const pubColors = ["#4e79a7","#f28e2b","#e15759","#76b7b2","#59a14f"];
         makeChart("chart-publisher-trends", {
             type: "line",
-            data: {
-                labels: trendYears,
-                datasets: results.map((r,i) => ({
-                    label: r.pub,
-                    data: trendYears.map(y=>r.data[y]||0),
-                    borderColor: pubColors[i], backgroundColor: pubColors[i],
-                    fill: false, tension: 0.1, pointRadius: 4,
-                }))
-            },
+            data: { labels: trendYears, datasets: results.map((r,i)=>({ label: r.pub, data: trendYears.map(y=>r.data[y]||0), borderColor: pubColors[i], backgroundColor: pubColors[i], fill: false, tension: 0.1, pointRadius: 4 })) },
             options: { plugins: { legend: { position: "top", labels: { font: { size: 11 } } }, datalabels: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
         });
     });
 
-    // Update stat cards from summary
     const totalWorks = pubsData.reduce((s,g)=>s+g.count,0);
     document.getElementById("stat-cards").innerHTML = `
-        <div class="stat-card" style="border-left:4px solid ${PURPLE}">
-            <div class="stat-label">Works</div>
-            <div class="stat-value">${totalWorks.toLocaleString()}</div>
-            <div class="stat-sub">${minYear}–${maxYear}</div>
-        </div>
-        <div class="stat-card" style="border-left:4px solid #c9a800">
-            <div class="stat-label">Total Citations</div>
-            <div class="stat-value">Loading...</div>
-            <div class="stat-sub">across filtered works</div>
-        </div>
-        <div class="stat-card" style="border-left:4px solid #7c3aed">
-            <div class="stat-label">Avg Citations</div>
-            <div class="stat-value">Loading...</div>
-            <div class="stat-sub">per work</div>
-        </div>
-        <div class="stat-card" style="border-left:4px solid ${GREEN}">
-            <div class="stat-label">Open Access</div>
-            <div class="stat-value">${Math.round(oaOpen/(oaOpen+oaClosed)*100)}%</div>
-            <div class="stat-sub">${oaOpen.toLocaleString()} OA works</div>
-        </div>
+        <div class="stat-card" style="border-left:4px solid ${PURPLE}"><div class="stat-label">Works</div><div class="stat-value">${totalWorks.toLocaleString()}</div><div class="stat-sub">${minYear}–${maxYear}</div></div>
+        <div class="stat-card" style="border-left:4px solid #c9a800"><div class="stat-label">Total Citations</div><div class="stat-value">Loading...</div><div class="stat-sub">across filtered works</div></div>
+        <div class="stat-card" style="border-left:4px solid #7c3aed"><div class="stat-label">Avg Citations</div><div class="stat-value">Loading...</div><div class="stat-sub">per work</div></div>
+        <div class="stat-card" style="border-left:4px solid ${GREEN}"><div class="stat-label">Open Access</div><div class="stat-value">${Math.round(oaOpen/(oaOpen+oaClosed)*100)}%</div><div class="stat-sub">${oaOpen.toLocaleString()} OA works</div></div>
     `;
 }
 
-// ── Fetch full works (with localStorage cache) ──
 async function fetchWorks() {
-    // Check localStorage cache
     try {
         const cached = localStorage.getItem(CACHE_KEY);
         const timestamp = localStorage.getItem(CACHE_TIME_KEY);
@@ -552,11 +447,8 @@ async function fetchWorks() {
             console.log("Loading from localStorage cache...");
             return JSON.parse(cached);
         }
-    } catch(e) {
-        console.log("Cache read error:", e);
-    }
+    } catch(e) { console.log("Cache read error:", e); }
 
-    // Fetch fresh from OpenAlex
     let allResults = [];
     let cursor = "*";
     const fields = "id,title,publication_year,cited_by_count,primary_location,open_access,type,doi,apc_list,apc_paid,publication_date,primary_topic,authorships";
@@ -574,19 +466,14 @@ async function fetchWorks() {
         if (!results.length || !cursor) break;
     }
 
-    // Save to localStorage
     try {
         localStorage.setItem(CACHE_KEY, JSON.stringify(allResults));
         localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-        console.log("Saved to localStorage cache");
-    } catch(e) {
-        console.log("Cache too large for localStorage:", e);
-    }
+    } catch(e) { console.log("Cache too large:", e); }
 
     return allResults;
 }
 
-// ── Process works ──
 function processWorks(works) {
     return works.map(w => {
         const oa = w.open_access || {};
@@ -706,26 +593,10 @@ function updateStatCards(fdf) {
     const minYear = document.getElementById("year-min").value;
     const maxYear = document.getElementById("year-max").value;
     document.getElementById("stat-cards").innerHTML = `
-        <div class="stat-card" style="border-left:4px solid ${PURPLE}">
-            <div class="stat-label">Works</div>
-            <div class="stat-value">${total.toLocaleString()}</div>
-            <div class="stat-sub">${minYear}–${maxYear}</div>
-        </div>
-        <div class="stat-card" style="border-left:4px solid #c9a800">
-            <div class="stat-label">Total Citations</div>
-            <div class="stat-value">${totalCit.toLocaleString()}</div>
-            <div class="stat-sub">across filtered works</div>
-        </div>
-        <div class="stat-card" style="border-left:4px solid #7c3aed">
-            <div class="stat-label">Avg Citations</div>
-            <div class="stat-value">${avgCit}</div>
-            <div class="stat-sub">per work</div>
-        </div>
-        <div class="stat-card" style="border-left:4px solid ${GREEN}">
-            <div class="stat-label">Open Access</div>
-            <div class="stat-value">${oaPct}%</div>
-            <div class="stat-sub">${oaCount.toLocaleString()} OA works</div>
-        </div>
+        <div class="stat-card" style="border-left:4px solid ${PURPLE}"><div class="stat-label">Works</div><div class="stat-value">${total.toLocaleString()}</div><div class="stat-sub">${minYear}–${maxYear}</div></div>
+        <div class="stat-card" style="border-left:4px solid #c9a800"><div class="stat-label">Total Citations</div><div class="stat-value">${totalCit.toLocaleString()}</div><div class="stat-sub">across filtered works</div></div>
+        <div class="stat-card" style="border-left:4px solid #7c3aed"><div class="stat-label">Avg Citations</div><div class="stat-value">${avgCit}</div><div class="stat-sub">per work</div></div>
+        <div class="stat-card" style="border-left:4px solid ${GREEN}"><div class="stat-label">Open Access</div><div class="stat-value">${oaPct}%</div><div class="stat-sub">${oaCount.toLocaleString()} OA works</div></div>
     `;
 }
 
@@ -744,6 +615,7 @@ function updateCharts(fdf) {
         type: "bar",
         data: { labels: years, datasets: [{ data: years.map(y=>yearCounts[y]), backgroundColor: PURPLE, borderWidth: 0 }] },
         options: {
+            maintainAspectRatio: false,
             plugins: { legend: { display: false }, datalabels: { anchor: "end", align: "start", color: "white", font: { weight: "bold", size: 11 }, formatter: v=>v.toLocaleString() } },
             scales: { x: { grid: { display: false } }, y: { grid: { display: true } } }
         }
@@ -774,18 +646,8 @@ function updateCharts(fdf) {
         data: { labels: apcYears, datasets: [{ data: apcYears.map(y=>apcByYear[y]), backgroundColor: "#6aaa5e", borderWidth: 0 }] },
         options: {
             maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    anchor: "end", align: "start", color: "white",
-                    font: { weight: "bold", size: 14 },
-                    formatter: v => "$" + (v >= 1000000 ? (v/1000000).toFixed(1)+"M" : (v/1000).toFixed(0)+"K")
-                }
-            },
-            scales: {
-                y: { ticks: { callback: v => "$" + (v >= 1000000 ? (v/1000000).toFixed(1)+"M" : (v/1000).toFixed(0)+"K") } },
-                x: { grid: { display: false } }
-            }
+            plugins: { legend: { display: false }, datalabels: { anchor: "end", align: "start", color: "white", font: { weight: "bold", size: 14 }, formatter: v=>"$"+(v>=1000000?(v/1000000).toFixed(1)+"M":(v/1000).toFixed(0)+"K") } },
+            scales: { y: { ticks: { callback: v=>"$"+(v>=1000000?(v/1000000).toFixed(1)+"M":(v/1000).toFixed(0)+"K") } }, x: { grid: { display: false } } }
         }
     });
 
@@ -801,15 +663,12 @@ function updateCharts(fdf) {
     const trendYears = Object.keys(trendData).sort();
     makeChart("chart-trends", {
         type: "line",
-        data: {
-            labels: trendYears,
-            datasets: [
-                { label: "Total",     data: trendYears.map(y=>trendData[y].total),  borderColor: PURPLE,    borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
-                { label: "OA (All)",  data: trendYears.map(y=>trendData[y].oa),     borderColor: GREEN,     borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
-                { label: "Gold OA",   data: trendYears.map(y=>trendData[y].gold),   borderColor: GOLD,      borderWidth: 2.5, pointRadius: 0, borderDash: [5,5], fill: false, tension: 0.1 },
-                { label: "Hybrid OA", data: trendYears.map(y=>trendData[y].hybrid), borderColor: "#7c3aed", borderWidth: 2.5, pointRadius: 0, borderDash: [2,2], fill: false, tension: 0.1 },
-            ]
-        },
+        data: { labels: trendYears, datasets: [
+            { label: "Total",     data: trendYears.map(y=>trendData[y].total),  borderColor: PURPLE,    borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
+            { label: "OA (All)",  data: trendYears.map(y=>trendData[y].oa),     borderColor: GREEN,     borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1 },
+            { label: "Gold OA",   data: trendYears.map(y=>trendData[y].gold),   borderColor: GOLD,      borderWidth: 2.5, pointRadius: 0, borderDash: [5,5], fill: false, tension: 0.1 },
+            { label: "Hybrid OA", data: trendYears.map(y=>trendData[y].hybrid), borderColor: "#7c3aed", borderWidth: 2.5, pointRadius: 0, borderDash: [2,2], fill: false, tension: 0.1 },
+        ]},
         options: { plugins: { legend: { position: "top", labels: { usePointStyle: true, pointStyle: "line", boxWidth: 30, font: { size: 12 }, padding: 16 } }, datalabels: { display: false } }, scales: { x: { grid: { display: false } } } }
     });
 
@@ -853,6 +712,7 @@ function updateCharts(fdf) {
 function updateTables(fdf) {
     const minYear = document.getElementById("year-min").value;
     const maxYear = document.getElementById("year-max").value;
+
     const pubSub = document.getElementById("pub-sub");
     if (pubSub) pubSub.textContent = `${fdf.length.toLocaleString()} works · ${minYear}–${maxYear} · use column filters to search`;
     const citedSub = document.getElementById("cited-sub");
@@ -862,6 +722,7 @@ function updateTables(fdf) {
     const topicsSub = document.getElementById("topics-sub");
     if (topicsSub) topicsSub.textContent = `Primary topics · ${minYear}–${maxYear}`;
 
+    // Recent publications
     const sorted = [...fdf].sort((a,b) => b.pub_date.localeCompare(a.pub_date)).slice(0, 200);
     const cellColors = {
         gold:    "background:#fef9c3; color:#854d0e;",
@@ -871,21 +732,21 @@ function updateTables(fdf) {
         closed:  "background:#f9fafb; color:#374151;",
         unknown: "background:#f9fafb; color:#6b7280;",
     };
-document.getElementById("publications-body").innerHTML = sorted.map(w => {
+    document.getElementById("publications-body").innerHTML = sorted.map(w => {
+        const statusStyle = cellColors[w.oa_status] || cellColors.unknown;
         return `<tr>
             <td style="max-width:600px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:14px 12px;">
                 <a href="${w.id}" target="_blank" style="color:#2563eb; text-decoration:none;">${w.title}</a>
             </td>
-            ...
+            <td style="text-align:center; color:#7a6d96; font-size:12px; padding:14px 8px; white-space:nowrap; width:80px;">${w.type||""}</td>
+            <td style="${statusStyle} text-align:center; font-size:12px; font-weight:600; padding:14px 8px; white-space:nowrap; width:90px;">${w.oa_status||""}</td>
+            <td style="text-align:center; color:#7a6d96; font-size:12px; padding:14px 8px; white-space:nowrap; width:110px;">${w.pub_date||""}</td>
+            <td style="text-align:right; font-weight:700; font-size:13px; padding:14px 12px; white-space:nowrap; width:90px;">${w.apc_list?"$"+Math.round(w.apc_list).toLocaleString():"—"}</td>
         </tr>`;
     }).join("");
-
     if ($.fn.DataTable.isDataTable("#table-publications")) $("#table-publications").DataTable().destroy();
     $("#table-publications").DataTable({
-        pageLength: 25,
-        order: [[3, "desc"]],
-        dom: 'tip',
-        autoWidth: false,
+        pageLength: 25, order: [[3,"desc"]], dom: 'tip', autoWidth: false,
         columnDefs: [
             { targets: 0, width: "55%" },
             { targets: 1, width: "80px",  className: "dt-center" },
@@ -895,21 +756,23 @@ document.getElementById("publications-body").innerHTML = sorted.map(w => {
         ]
     });
 
+    // Top cited
     const topCited = [...fdf].sort((a,b)=>b.citations-a.citations).slice(0,25);
-document.getElementById("cited-body").innerHTML = topCited.map((w,i) => `
+    document.getElementById("cited-body").innerHTML = topCited.map((w,i) => `
         <tr>
             <td style="text-align:center; color:#7a6d96; width:42px; padding:14px 8px;">${i+1}</td>
             <td style="max-width:400px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:14px 12px;">
                 <a href="${w.id}" target="_blank" style="color:#2563eb; text-decoration:none;">${w.title}</a>
             </td>
-            ...
+            <td style="text-align:center; color:#7a6d96; padding:14px 8px;">${w.year||""}</td>
+            <td style="text-align:right; font-weight:700; padding:14px 8px;">${w.citations.toLocaleString()}</td>
+            <td style="padding:14px 8px;">${w.journal||""}</td>
+            <td style="text-align:center; font-weight:700; padding:14px 8px; color:${w.oa==="Yes"?"#16a34a":"#7a6d96"};">${w.oa||""}</td>
+            <td style="text-align:center; color:#7a6d96; padding:14px 8px;">${w.type||""}</td>
         </tr>`).join("");
-if ($.fn.DataTable.isDataTable("#table-cited")) $("#table-cited").DataTable().destroy();
+    if ($.fn.DataTable.isDataTable("#table-cited")) $("#table-cited").DataTable().destroy();
     $("#table-cited").DataTable({
-        pageLength: 25,
-        order: [[3,"desc"]],
-        dom: 'tip',
-        autoWidth: false,
+        pageLength: 25, order: [[3,"desc"]], dom: 'tip', autoWidth: false,
         columnDefs: [
             { targets: 0, width: "42px" },
             { targets: 1, width: "40%" },
@@ -917,22 +780,32 @@ if ($.fn.DataTable.isDataTable("#table-cited")) $("#table-cited").DataTable().de
             { targets: 4, width: "20%" }
         ]
     });
-    
+
+    // Top authors
     const authorCounts = {};
     fdf.forEach(w => { if (w.authors) w.authors.split("|").forEach(a => { if (a) authorCounts[a] = (authorCounts[a]||0)+1; }); });
     const topAuthors = Object.entries(authorCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
     document.getElementById("authors-body").innerHTML = topAuthors.map((e,i) => `
-        <tr><td style="text-align:center; color:#7a6d96; width:44px;">${i+1}</td><td>${e[0]}</td><td style="text-align:right; font-weight:700;">${e[1].toLocaleString()}</td></tr>`).join("");
+        <tr>
+            <td style="text-align:center; color:#7a6d96; width:44px; padding:12px 8px;">${i+1}</td>
+            <td style="padding:12px 8px;">${e[0]}</td>
+            <td style="text-align:right; font-weight:700; padding:12px 8px;">${e[1].toLocaleString()}</td>
+        </tr>`).join("");
     if ($.fn.DataTable.isDataTable("#table-authors")) $("#table-authors").DataTable().destroy();
-    $("#table-authors").DataTable({ pageLength: 10, order: [[2,"desc"]], searching: false, paging: false, info: false });
+    $("#table-authors").DataTable({ pageLength: 10, order: [[2,"desc"]], searching: false, paging: false, info: false, dom: 't' });
 
+    // Top topics
     const topicCounts = {};
     fdf.forEach(w => { if (w.topic) topicCounts[w.topic] = (topicCounts[w.topic]||0)+1; });
     const topTopics = Object.entries(topicCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
     document.getElementById("topics-body").innerHTML = topTopics.map((e,i) => `
-        <tr><td style="text-align:center; color:#7a6d96; width:44px;">${i+1}</td><td>${e[0]}</td><td style="text-align:right; font-weight:700;">${e[1].toLocaleString()}</td></tr>`).join("");
+        <tr>
+            <td style="text-align:center; color:#7a6d96; width:44px; padding:12px 8px;">${i+1}</td>
+            <td style="padding:12px 8px;">${e[0]}</td>
+            <td style="text-align:right; font-weight:700; padding:12px 8px;">${e[1].toLocaleString()}</td>
+        </tr>`).join("");
     if ($.fn.DataTable.isDataTable("#table-topics")) $("#table-topics").DataTable().destroy();
-    $("#table-topics").DataTable({ pageLength: 10, order: [[2,"desc"]], searching: false, paging: false, info: false });
+    $("#table-topics").DataTable({ pageLength: 10, order: [[2,"desc"]], searching: false, paging: false, info: false, dom: 't' });
 }
 
 async function fetchInstitution() {
@@ -946,45 +819,29 @@ async function init() {
     setupYearSelectors();
     fetchInstitution();
 
-    // Step 1: Load summary data instantly for charts
     document.getElementById("stat-cards").innerHTML = '<div class="loading">Loading charts...</div>';
     summaryData = await fetchSummaryData();
     renderChartsFromSummary(summaryData);
 
-    // Step 2: Show loading notice for tables
     document.getElementById("stat-cards").style.display = "flex";
     document.getElementById("tab-overview").insertAdjacentHTML("beforeend", `
-        <div id="loading-notice" style="
-            background: white; border: 1px solid #ddd5ee; border-left: 4px solid #461D7C;
-            border-radius: 12px; padding: 14px 18px; margin-bottom: 16px;
-            display: flex; align-items: center; gap: 12px;
-            box-shadow: 0 1px 4px rgba(70,29,124,0.06);
-        ">
-            <div style="
-                width: 18px; height: 18px; border: 2px solid #ddd5ee;
-                border-top-color: #461D7C; border-radius: 50%;
-                animation: spin 0.8s linear infinite; flex-shrink: 0;
-            "></div>
+        <div id="loading-notice" style="background:white; border:1px solid #ddd5ee; border-left:4px solid #461D7C; border-radius:12px; padding:14px 18px; margin-bottom:16px; display:flex; align-items:center; gap:12px; box-shadow:0 1px 4px rgba(70,29,124,0.06);">
+            <div style="width:18px; height:18px; border:2px solid #ddd5ee; border-top-color:#461D7C; border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0;"></div>
             <div>
                 <div style="font-weight:700; font-size:13px; color:#461D7C;">Loading full publication data...</div>
-                <div id="loading-progress" style="font-size:12px; color:#7a6d96; margin-top:2px;">
-                    Fetching works from OpenAlex — tables will be available shortly
-                </div>
+                <div style="font-size:12px; color:#7a6d96; margin-top:2px;">Fetching works from OpenAlex — tables will be available shortly</div>
             </div>
         </div>
     `);
 
-    // Add spin animation to head
     const style = document.createElement("style");
     style.textContent = "@keyframes spin { to { transform: rotate(360deg); } }";
     document.head.appendChild(style);
 
-    // Step 3: Load full works in background
     const raw = await fetchWorks();
     allWorks = processWorks(raw);
     filterData();
 
-    // Remove loading notice
     const notice = document.getElementById("loading-notice");
     if (notice) notice.remove();
 }
