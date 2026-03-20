@@ -130,6 +130,14 @@
         #table-cited thead th { background: #f0ecf7; color: #461D7C; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
         #table-cited tbody tr { height: auto; min-height: 60px; }
         #table-cited tbody td { vertical-align: middle; }
+
+        #table-cited tbody td:nth-child(2),
+        #table-publications tbody td:nth-child(1) {
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
         
     </style>
 </head>
@@ -851,18 +859,12 @@ function updateTables(fdf) {
         closed:  "background:#f9fafb; color:#374151;",
         unknown: "background:#f9fafb; color:#6b7280;",
     };
-    document.getElementById("publications-body").innerHTML = sorted.map(w => {
-        const statusStyle = cellColors[w.oa_status] || cellColors.unknown;
+document.getElementById("publications-body").innerHTML = sorted.map(w => {
         return `<tr>
-            <td style="white-space:normal; line-height:1.6; padding:14px 12px; max-width:600px;">
+            <td style="max-width:600px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:14px 12px;">
                 <a href="${w.id}" target="_blank" style="color:#2563eb; text-decoration:none;">${w.title}</a>
             </td>
-            <td style="text-align:center; color:#7a6d96; font-size:12px; padding:14px 8px; white-space:nowrap; width:80px;">${w.type || ""}</td>
-            <td style="${statusStyle} text-align:center; font-size:12px; font-weight:600; padding:14px 8px; white-space:nowrap; width:90px;">${w.oa_status || ""}</td>
-            <td style="text-align:center; color:#7a6d96; font-size:12px; padding:14px 8px; white-space:nowrap; width:110px;">${w.pub_date || ""}</td>
-            <td style="text-align:right; font-weight:700; font-size:13px; padding:14px 12px; white-space:nowrap; width:90px;">
-                ${w.apc_list ? "$" + Math.round(w.apc_list).toLocaleString() : "—"}
-            </td>
+            ...
         </tr>`;
     }).join("");
 
@@ -870,6 +872,7 @@ function updateTables(fdf) {
     $("#table-publications").DataTable({
         pageLength: 25,
         order: [[3, "desc"]],
+        dom: 'tip',
         autoWidth: false,
         columnDefs: [
             { targets: 0, width: "55%" },
@@ -881,17 +884,13 @@ function updateTables(fdf) {
     });
 
     const topCited = [...fdf].sort((a,b)=>b.citations-a.citations).slice(0,25);
-    document.getElementById("cited-body").innerHTML = topCited.map((w,i) => `
+document.getElementById("cited-body").innerHTML = topCited.map((w,i) => `
         <tr>
             <td style="text-align:center; color:#7a6d96; width:42px; padding:14px 8px;">${i+1}</td>
-            <td style="white-space:normal; line-height:1.6; padding:14px 12px;">
+            <td style="max-width:400px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:14px 12px;">
                 <a href="${w.id}" target="_blank" style="color:#2563eb; text-decoration:none;">${w.title}</a>
             </td>
-            <td style="text-align:center; color:#7a6d96; padding:14px 8px;">${w.year||""}</td>
-            <td style="text-align:right; font-weight:700; padding:14px 8px;">${w.citations.toLocaleString()}</td>
-            <td style="padding:14px 8px;">${w.journal||""}</td>
-            <td style="text-align:center; font-weight:700; padding:14px 8px; color:${w.oa==="Yes"?"#16a34a":"#7a6d96"};">${w.oa||""}</td>
-            <td style="text-align:center; color:#7a6d96; padding:14px 8px;">${w.type||""}</td>
+            ...
         </tr>`).join("");
 if ($.fn.DataTable.isDataTable("#table-cited")) $("#table-cited").DataTable().destroy();
     $("#table-cited").DataTable({
