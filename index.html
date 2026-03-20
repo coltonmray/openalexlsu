@@ -123,6 +123,8 @@
            cursor: pointer;
         }
 
+        #chart-apc { height: 250px !important; max-height: 250px; }
+
         #table-publications tbody tr { height: auto; min-height: 60px; }
         #table-publications tbody td { vertical-align: middle; }
         #table-publications thead th { background: #f0ecf7; color: #461D7C; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -188,25 +190,25 @@
         </div>
         <!-- Tick marks and labels -->
         <div style="display:flex; justify-content:space-between; margin: 4px 10px 0; position:relative;">
-            <div id="tick-2020" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2020,2020)">
+            <div id="tick-2020" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2020,2020)">
                 <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2020
             </div>
-            <div id="tick-2021" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2021,2021)">
+            <div id="tick-2021" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2021,2021)">
                 <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2021
             </div>
-            <div id="tick-2022" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2022,2022)">
+            <div id="tick-2022" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2022,2022)">
                 <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2022
             </div>
-            <div id="tick-2023" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2023,2023)">
+            <div id="tick-2023" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2023,2023)">
                 <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2023
             </div>
-            <div id="tick-2024" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2024,2024)">
+            <div id="tick-2024" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2024,2024)">
                 <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2024
             </div>
-            <div id="tick-2025" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2025,2025)">
+            <div id="tick-2025" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2025,2025)">
                 <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2025
             </div>
-            <div id="tick-2026" style="text-align:center; font-size:11px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2026,2026)">
+            <div id="tick-2026" style="text-align:center; font-size:13px; color:#7a6d96; cursor:pointer;" onclick="setYearRange(2026,2026)">
                 <div style="width:1px; height:6px; background:#ddd5ee; margin:0 auto 2px;"></div>2026
             </div>
         </div>
@@ -772,8 +774,18 @@ function updateCharts(fdf) {
         data: { labels: apcYears, datasets: [{ data: apcYears.map(y=>apcByYear[y]), backgroundColor: "#6aaa5e", borderWidth: 0 }] },
         options: {
             maintainAspectRatio: false,
-            plugins: { legend: { display: false }, datalabels: { anchor: "end", align: "start", color: "white", font: { weight: "bold", size: 14 }, formatter: v=>"$"+(v>=1000000?(v/1000000).toFixed(1)+"M":(v/1000).toFixed(0)+"K") } },
-            scales: { y: { ticks: { callback: v=>"$"+(v>=1000000?(v/1000000).toFixed(1)+"M":(v/1000).toFixed(0)+"K") } }, x: { grid: { display: false } } }
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    anchor: "end", align: "start", color: "white",
+                    font: { weight: "bold", size: 14 },
+                    formatter: v => "$" + (v >= 1000000 ? (v/1000000).toFixed(1)+"M" : (v/1000).toFixed(0)+"K")
+                }
+            },
+            scales: {
+                y: { ticks: { callback: v => "$" + (v >= 1000000 ? (v/1000000).toFixed(1)+"M" : (v/1000).toFixed(0)+"K") } },
+                x: { grid: { display: false } }
+            }
         }
     });
 
