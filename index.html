@@ -767,32 +767,30 @@ function updateTables(fdf) {
 
     // Top cited
     const topCited = [...fdf].sort((a,b)=>b.citations-a.citations).slice(0,25);
-    document.getElementById("cited-body").innerHTML = topCited.map((w,i) => `
+document.getElementById("cited-body").innerHTML = topCited.map((w,i) => `
         <tr>
-            <td style="text-align:center; color:#7a6d96; width:42px; padding:14px 8px;">${i+1}</td>
-            <td style="max-width:400px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:14px 12px;">
+            <td style="text-align:center; color:#7a6d96; padding:14px 8px;">${i+1}</td>
+            <td style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:14px 12px;">
                 <a href="${w.id}" target="_blank" style="color:#2563eb; text-decoration:none;">${w.title}</a>
             </td>
             <td style="text-align:center; color:#7a6d96; padding:14px 8px;">${w.year||""}</td>
             <td style="text-align:right; font-weight:700; padding:14px 8px;">${w.citations.toLocaleString()}</td>
-            <td style="max-width:400px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:14px 12px;">
-                <a href="${w.id}" target="_blank" style="color:#2563eb; text-decoration:none;">${w.journal}</a>
-            </td>
+            <td style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:14px 8px;">${w.journal||""}</td>
             <td style="text-align:center; font-weight:700; padding:14px 8px; color:${w.oa==="Yes"?"#16a34a":"#7a6d96"};">${w.oa||""}</td>
             <td style="text-align:center; color:#7a6d96; padding:14px 8px;">${w.type||""}</td>
-            <td style="padding:14px 8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${w.journal||""}</td>
         </tr>`).join("");
     if ($.fn.DataTable.isDataTable("#table-cited")) $("#table-cited").DataTable().destroy();
-    $("#table-cited").DataTable({
+$("#table-cited").DataTable({
         pageLength: 25, order: [[3,"desc"]], dom: 'tip', autoWidth: false,
+        scrollX: false,
         columnDefs: [
-            { targets: 0, width: "42px" },
-            { targets: 1, width: "35%" },    // ← title
-            { targets: 2, width: "60px" },   // ← year
-            { targets: 3, width: "70px" },   // ← citations
-            { targets: 4, width: "35%" },    // ← journal, smaller
-            { targets: 5, width: "50px" },   // ← OA
-            { targets: 6, width: "60px" },   // ← type, constrained
+            { targets: 0, width: "40px" },
+            { targets: 1, width: "35%" },
+            { targets: 2, width: "55px" },
+            { targets: 3, width: "75px" },
+            { targets: 4, width: "20%" },
+            { targets: 5, width: "45px" },
+            { targets: 6, width: "55px" },
         ]
     });
 
