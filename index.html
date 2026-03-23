@@ -103,6 +103,8 @@
         #table-cited thead th { background: #f0ecf7; color: #461D7C; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
         #table-cited tbody tr { height: auto; min-height: 60px; }
         #table-cited tbody td { vertical-align: middle; }
+        #table-cited { table-layout: fixed; width: 100% !important; }
+        #table-cited td, #table-cited th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         #table-authors thead th, #table-topics thead th {
             background: #f0ecf7; color: #461D7C; font-size: 11px;
@@ -778,6 +780,7 @@ function updateTables(fdf) {
             </td>
             <td style="text-align:center; font-weight:700; padding:14px 8px; color:${w.oa==="Yes"?"#16a34a":"#7a6d96"};">${w.oa||""}</td>
             <td style="text-align:center; color:#7a6d96; padding:14px 8px;">${w.type||""}</td>
+            <td style="padding:14px 8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${w.journal||""}</td>
         </tr>`).join("");
     if ($.fn.DataTable.isDataTable("#table-cited")) $("#table-cited").DataTable().destroy();
     $("#table-cited").DataTable({
