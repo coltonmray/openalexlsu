@@ -281,32 +281,27 @@
         </div>
     </div>
 
-    <!-- Authors tab -->
+<!-- Authors tab -->
     <div id="tab-authors" class="tab-content">
         <div class="grid-2">
-            <div>
+            <div class="card">
                 <div class="section-title">Top Authors</div>
                 <div class="section-sub" id="authors-sub">By publication count · 2020–2026</div>
-                <div class="card">
-                    <table id="table-authors" class="display" style="width:100%">
-                        <thead><tr><th>#</th><th>Name</th><th>Works</th></tr></thead>
-                        <tbody id="authors-body"></tbody>
-                    </table>
-                </div>
+                <table id="table-authors" class="display" style="width:100%">
+                    <thead><tr><th>#</th><th>Name</th><th>Works</th></tr></thead>
+                    <tbody id="authors-body"></tbody>
+                </table>
             </div>
-            <div>
+            <div class="card">
                 <div class="section-title">Top Research Topics</div>
                 <div class="section-sub" id="topics-sub">Primary topics · 2020–2026</div>
-                <div class="card">
-                    <table id="table-topics" class="display" style="width:100%">
-                        <thead><tr><th>#</th><th>Name</th><th>Works</th></tr></thead>
-                        <tbody id="topics-body"></tbody>
-                    </table>
-                </div>
+                <table id="table-topics" class="display" style="width:100%">
+                    <thead><tr><th>#</th><th>Name</th><th>Works</th></tr></thead>
+                    <tbody id="topics-body"></tbody>
+                </table>
             </div>
         </div>
     </div>
-</div>
 
 <!-- Footer -->
 <div class="footer">
@@ -791,8 +786,8 @@ function updateTables(fdf) {
             { targets: 0, width: "42px" },
             { targets: 1, width: "35%" },    // ← title
             { targets: 2, width: "60px" },   // ← year
-            { targets: 3, width: "80px" },   // ← citations
-            { targets: 4, width: "18%" },    // ← journal, smaller
+            { targets: 3, width: "70px" },   // ← citations
+            { targets: 4, width: "12%" },    // ← journal, smaller
             { targets: 5, width: "50px" },   // ← OA
             { targets: 6, width: "60px" },   // ← type, constrained
         ]
