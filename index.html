@@ -643,13 +643,23 @@ function updateCharts(fdf) {
     const apcByYear = {};
     fdf.forEach(w => { if (w.apc_list && w.year) apcByYear[w.year] = (apcByYear[w.year]||0)+w.apc_list; });
     const apcYears = Object.keys(apcByYear).sort();
-    makeChart("chart-apc", {
+makeChart("chart-apc", {
         type: "bar",
         data: { labels: apcYears, datasets: [{ data: apcYears.map(y=>apcByYear[y]), backgroundColor: "#6aaa5e", borderWidth: 0 }] },
         options: {
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false }, datalabels: { anchor: "end", align: "start", color: "white", font: { weight: "bold", size: 14 }, formatter: v=>"$"+(v>=1000000?(v/1000000).toFixed(1)+"M":(v/1000).toFixed(0)+"K") } },
-            scales: { y: { ticks: { callback: v=>"$"+(v>=1000000?(v/1000000).toFixed(1)+"M":(v/1000).toFixed(0)+"K") } }, x: { grid: { display: false } } }
+            maintainAspectRatio: false,    // ← add this
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    anchor: "end", align: "start", color: "white",
+                    font: { weight: "bold", size: 14 },
+                    formatter: v => "$" + (v >= 1000000 ? (v/1000000).toFixed(1)+"M" : (v/1000).toFixed(0)+"K")
+                }
+            },
+            scales: {
+                y: { ticks: { callback: v => "$" + (v >= 1000000 ? (v/1000000).toFixed(1)+"M" : (v/1000).toFixed(0)+"K") } },
+                x: { grid: { display: false } }
+            }
         }
     });
 
@@ -770,7 +780,7 @@ function updateTables(fdf) {
             <td style="text-align:right; font-weight:700; padding:14px 8px;">${w.citations.toLocaleString()}</td>
             <td style="max-width:400px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:14px 12px;">
                 <a href="${w.id}" target="_blank" style="color:#2563eb; text-decoration:none;">${w.journal}</a>
-            </td>    
+            </td>
             <td style="text-align:center; font-weight:700; padding:14px 8px; color:${w.oa==="Yes"?"#16a34a":"#7a6d96"};">${w.oa||""}</td>
             <td style="text-align:center; color:#7a6d96; padding:14px 8px;">${w.type||""}</td>
         </tr>`).join("");
@@ -779,9 +789,12 @@ function updateTables(fdf) {
         pageLength: 25, order: [[3,"desc"]], dom: 'tip', autoWidth: false,
         columnDefs: [
             { targets: 0, width: "42px" },
-            { targets: 1, width: "40%" },
-            { targets: [2,3,5,6], width: "auto" },
-            { targets: 4, width: "20%" }
+            { targets: 1, width: "35%" },    // ← title
+            { targets: 2, width: "60px" },   // ← year
+            { targets: 3, width: "80px" },   // ← citations
+            { targets: 4, width: "18%" },    // ← journal, smaller
+            { targets: 5, width: "50px" },   // ← OA
+            { targets: 6, width: "60px" },   // ← type, constrained
         ]
     });
 
