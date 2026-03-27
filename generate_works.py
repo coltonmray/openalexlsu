@@ -5,7 +5,6 @@ import time
 ROR_ID = "05ect4e57"
 START_YEAR = 2020
 BASE_URL = "https://api.openalex.org"
-OUTPUT_FILE = "C:\\Users\\coltonray\\OneDrive - Louisiana State University\\Desktop\\works.json"
 
 FIELDS = ",".join([
     "id",
