@@ -442,35 +442,23 @@ async function fetchWorks() {
     try {
         const cached = localStorage.getItem(CACHE_KEY);
         const timestamp = localStorage.getItem(CACHE_TIME_KEY);
+
         if (cached && timestamp && Date.now() - parseInt(timestamp) < CACHE_MAX_AGE) {
-            console.log("Loading from localStorage cache...");
+            console.log("Loading from localStorage...");
             return JSON.parse(cached);
         }
-    } catch(e) { console.log("Cache read error:", e); }
+    } catch(e) {}
 
-    let allResults = [];
-    let cursor = "*";
-    const fields = "id,title,publication_year,cited_by_count,primary_location,open_access,type,doi,apc_list,apc_paid,publication_date,primary_topic,authorships";
-    const filter = `institutions.ror:${ROR_ID},from_publication_date:${START_YEAR}-01-01`;
-
-    while (true) {
-        const params = new URLSearchParams({ filter, "per-page": 200, cursor, select: fields, sort: "publication_year:desc" });
-        const response = await fetch(`${BASE_URL}/works?${params}`);
-        const data = await response.json();
-        const results = data.results || [];
-        allResults = allResults.concat(results);
-        const total = data.meta?.count || 0;
-        console.log(`Fetched ${allResults.length}/${total} works`);
-        cursor = data.meta?.next_cursor;
-        if (!results.length || !cursor) break;
-    }
+    console.log("Loading from works.json...");
+    const response = await fetch("works.json");
+    const data = await response.json();
 
     try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(allResults));
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
         localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-    } catch(e) { console.log("Cache too large:", e); }
+    } catch(e) {}
 
-    return allResults;
+    return data;
 }
 
 function processWorks(works) {
